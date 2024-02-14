@@ -1,0 +1,13 @@
+/* assets/style.css */
+.custom-tabs .custom-tab {
+    background: #41c192;
+    border: 1px solid #afeed3;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.custom-tabs .custom-tab--selected {
+    background: #019c95;
+    color: white;
+    border: 1px solid #05b5e6;
+}
