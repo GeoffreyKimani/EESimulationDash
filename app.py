@@ -13,18 +13,21 @@ app.layout = html.Div([
         id="tabs", 
         value='tab-1', 
         children=[
-            dcc.Tab(label='Step 1: Load and Extract Fields Data', value='tab-1', className='custom-tab', selected_className='custom-tab--selected'),
-            dcc.Tab(label='Step 2: Preprocessing', value='tab-2', className='custom-tab', selected_className='custom-tab--selected'),
-            dcc.Tab(label='Step 3: Prediction', value='tab-3', className='custom-tab', selected_className='custom-tab--selected'),
+            dcc.Tab(label='Step 1: Load and Extract Fields Data', value='tab-1', id='tab-1', className='custom-tab', selected_className='custom-tab--selected'),
+            dcc.Tab(label='Step 2: Preprocessing', value='tab-2', id='tab-2', className='custom-tab', selected_className='custom-tab--selected'),
+            dcc.Tab(label='Step 3: Prediction', value='tab-3', id='tab-3', className='custom-tab', selected_className='custom-tab--selected'),
         ],
         className='custom-tabs'
     ),
     html.Div(id='tabs-content'),
+], style={'textAlign': 'center'})
 
-    # ----------------------------------------------------- #
-    #                   TAB 1 CONTENT                       #
-    # ----------------------------------------------------- #
-    html.Div([
+# ----------------------------------------------------- #
+#                   TAB 1 CONTENT                       #
+# ----------------------------------------------------- #
+# Separate functions for each tab's content
+def tab_1_content():
+    return     html.Div([
         html.Label('Select Crop:', style={'fontSize': 20, 'marginBottom': '10px'}),
         dcc.Dropdown(
             id='crop-selection-dropdown',
@@ -57,24 +60,13 @@ app.layout = html.Div([
         'padding': '20px',
         'boxShadow': '2px 2px 10px #aaa'
     })
-], style={'textAlign': 'center'})
-
-# ----------------------------------------------------- #
-#                   TAB 1 CONTENT                       #
-# ----------------------------------------------------- #
-# Separate functions for each tab's content
-def tab_1_content():
-    return html.Div([
-        html.H3('Step 1 Content Here'),
-        # Add more content here
-    ])
 
 @callback(
     [Output('dynamic-input-container', 'children'),
-     Output('csv-data-table', 'children')],
+    Output('csv-data-table', 'children')],
     [Input('crop-selection-dropdown', 'value'),
-     Input('district-selection-dropdown', 'value'),
-     Input('year-selection-dropdown', 'value')],
+    Input('district-selection-dropdown', 'value'),
+    Input('year-selection-dropdown', 'value')],
     [State('crop-selection-dropdown', 'value')]  # State allows us to pass in additional values without triggering the callback
 )
 def update_inputs_and_display_csv(crop, selected_districts, selected_years, crop_state):
@@ -124,8 +116,8 @@ def update_inputs_and_display_csv(crop, selected_districts, selected_years, crop
 @app.callback(
     Output('stored-data', 'data'),  # Store data in dcc.Store
     [Input('crop-selection-dropdown', 'value'),  # Plus other inputs that affect the DataFrame
-     Input('district-selection-dropdown', 'value'),
-     Input('year-selection-dropdown', 'value')]
+    Input('district-selection-dropdown', 'value'),
+    Input('year-selection-dropdown', 'value')]
 )
 def filter_data_and_store(crop, selected_districts, selected_years):
     # Load the full dataset for the selected crop
@@ -201,7 +193,7 @@ def show_plots_box(n_clicks, stored_data):
         # Convert the dataframe to a GeoDataFrame
         gdf = gpd.GeoDataFrame(df, geometry='geometry', crs="EPSG:4326")
 
-         # Generate the base64-encoded image
+        # Generate the base64-encoded image
         encoded_image = plot_plots_in_data(df)
         
         # Use the `html.Img` component to display the image directly from the base64 string
