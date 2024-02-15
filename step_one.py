@@ -1,17 +1,20 @@
-import base64
+import base64, json
 from io import BytesIO
 
 import os, rasterio, matplotlib
 import rasterio.plot
 import pandas as pd
+import numpy as np
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from shapely.geometry import shape
 from constants import DATA_DIR, district_shape_file, ASSETS_DIR
 from contextlib import contextmanager
 
-matplotlib.use('Agg')
+import plotly.express as px
+import plotly.graph_objects as go
 
+matplotlib.use('Agg')
 
 def load_data_for_crop(crop):
     df = None
@@ -23,6 +26,17 @@ def load_data_for_crop(crop):
         df = pd.read_csv(potato_file)
     return df
 
+def defineROI(district_name, gdf):
+    area = None
+    for _, row in gdf.iterrows():
+        if row['NAME_2'] == district_name:
+            area = shape(row['geometry'])
+            return area  # Return the ROI immediately after it's found
+    return area
+
+# ----------------------------------------------------- #
+#                   TAB 1 PLOT FUNCTIONS                #
+# ----------------------------------------------------- #
 @contextmanager
 def plot_context():
     try:
@@ -31,7 +45,7 @@ def plot_context():
     finally:
         plt.close(fig)
 
-def plot_plots_in_data(locs_df, output_image_path=f"{ASSETS_DIR}/plots_image.png"):
+def plot_plots_in_data(locs_df):
     # Step 1: Load the base map
     with rasterio.open(DATA_DIR + f"/GlobalLandcover/Clipped_Rwanda_L1_LCC_19.tif") as src:
         raster_crs = src.crs
@@ -58,8 +72,8 @@ def plot_plots_in_data(locs_df, output_image_path=f"{ASSETS_DIR}/plots_image.png
     if gdf.crs != raster_crs:
         gdf = gdf.to_crs(raster_crs)
 
+    # Image will not be saved to assets to avoid reloading the application
     with plot_context() as (fig, ax):
-        # Your existing plotting code...
         rasterio.plot.show(base_map_array, ax=ax, transform=transform, cmap='terrain', extent=src.bounds)
         gdf.plot(ax=ax, color='red', markersize=5)
         buf = BytesIO()
@@ -67,23 +81,6 @@ def plot_plots_in_data(locs_df, output_image_path=f"{ASSETS_DIR}/plots_image.png
         plt.close()  # Make sure to close the plot
         # Encode the image in base64 and return
         return base64.b64encode(buf.getvalue()).decode('utf-8')
-
-    # # Return the path to the saved image
-    # return output_image_path
-
-def defineROI(district_name, gdf):
-    area = None
-    for _, row in gdf.iterrows():
-        if row['NAME_2'] == district_name:
-            area = shape(row['geometry'])
-            return area  # Return the ROI immediately after it's found
-    return area
-
-import plotly.express as px
-import plotly.graph_objects as go
-import geopandas as gpd
-from shapely.geometry import shape
-import json
 
 def plot_districts_with_plotly(gdf, selected_districts):
     """
@@ -143,3 +140,26 @@ def plot_districts_with_plotly(gdf, selected_districts):
 
     fig.update_layout(margin={"r":0, "t":0, "l":0, "b":0})
     return fig
+
+# ----------------------------------------------------- #
+#                   TAB 1 PLOT EXTRACTION FUNCTIONS     #
+# ----------------------------------------------------- #
+def hectares_to_square_edges(lon, lat, hectares):
+    """
+    This function takes the center point (lon, lat) of a plot and the size in hectares,
+    and returns the coordinates of the square edges.
+    """
+    # Convert hectares to square meters
+    area_sqm = hectares * 10000
+    # Assume square plot to simplify, calculate the side length in meters
+    side_length_m = np.sqrt(area_sqm)
+    # Convert side length from meters to degrees (approximation)
+    side_length_deg = side_length_m / (111.32 * 1000)  # rough estimate: 111.32 km per degree
+
+    # Calculate the coordinates of the four corners of the square
+    top_left = (lon - side_length_deg, lat + side_length_deg)
+    top_right = (lon + side_length_deg, lat + side_length_deg)
+    bottom_left = (lon - side_length_deg, lat - side_length_deg)
+    bottom_right = (lon + side_length_deg, lat - side_length_deg)
+
+    return [top_left, top_right, bottom_right, bottom_left, top_left]  # Closed loop

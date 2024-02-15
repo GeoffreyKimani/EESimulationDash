@@ -2,8 +2,9 @@ import os
 import pandas as pd
 from constants import land_cover_dir, district_shape_file
 from dash import Dash, dcc, html, Input, Output, callback, dash_table, State
-from step_one import load_data_for_crop, plot_plots_in_data, plot_districts_with_plotly
+from step_one import load_data_for_crop, plot_plots_in_data, plot_districts_with_plotly, hectares_to_square_edges
 import geopandas as gpd
+from shapely.geometry import Polygon
 
 app = Dash(__name__, suppress_callback_exceptions=True)
 
@@ -44,8 +45,10 @@ app.layout = html.Div([
     dcc.Store(id='stored-data'),  # To store the filtered DataFrame
     html.Button('Show Districts', id='btn-show-districts', n_clicks=0),
     html.Button('Show Plots', id='btn-show-plots', n_clicks=0),
+    html.Button('Create Plots Box', id='btn-plots-box', n_clicks=0),
     html.Div(id='districts-map-container'),  # To display the district map
     html.Div(id='plots-map-container'),  # To display the plots map
+    html.Div(id='plots-map-box'),  # To display the plots map
     ], style={
         'width': '50%', 
         'margin': '0 auto', 
@@ -162,26 +165,6 @@ def show_districts(n_clicks, stored_data):
         return dcc.Graph(figure=fig)
     return html.Div()
 
-# @app.callback(
-#     Output('plots-map-container', 'children'),
-#     [Input('btn-show-plots', 'n_clicks')],
-#     [State('stored-data', 'data')]
-# )
-# def show_plots(n_clicks, stored_data):
-#     if n_clicks > 0:
-#         df = pd.read_json(stored_data, orient='split')
-        
-#         # Generate the image and get the path to the saved image
-#         _ = plot_plots_in_data(df)
-        
-#         # Use the `html.Img` component to display the image
-#         # The `src` attribute should point to the location of the saved image relative to the `assets` folder
-#         image_filename = 'plots_image.png'
-#         return html.Img(src=app.get_asset_url(image_filename))
-
-#     # If no image is to be displayed, return an empty `div`
-#     return html.Div()
-
 @app.callback(
     Output('plots-map-container', 'children'),
     [Input('btn-show-plots', 'n_clicks')],
@@ -200,6 +183,32 @@ def show_plots(n_clicks, stored_data):
     # If no image is to be displayed, return an empty `div`
     return html.Div()
 
+@app.callback(
+    Output('plots-map-box', 'children'),
+    [Input('btn-plots-box', 'n_clicks')],
+    [State('stored-data', 'data')]
+)
+def show_plots_box(n_clicks, stored_data):
+    if n_clicks > 0:
+        df = pd.read_json(stored_data, orient='split')
+        
+        # Apply the function to each row in the dataframe to create a polygon for each plot
+        df['geometry'] = df.apply(
+            lambda row: Polygon(hectares_to_square_edges(row['field_longitude'], row['field_latitude'], row['plot_hectares'])),
+            axis=1
+        )
+
+        # Convert the dataframe to a GeoDataFrame
+        gdf = gpd.GeoDataFrame(df, geometry='geometry', crs="EPSG:4326")
+
+         # Generate the base64-encoded image
+        encoded_image = plot_plots_in_data(df)
+        
+        # Use the `html.Img` component to display the image directly from the base64 string
+        return html.Img(src=f"data:image/png;base64,{encoded_image}")
+
+    # If no image is to be displayed, return an empty `div`
+    return html.Div()
 
 
 # ----------------------------------------------------- #
