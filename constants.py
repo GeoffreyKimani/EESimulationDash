@@ -1,4 +1,4 @@
-import os
+import os, ee
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -15,3 +15,7 @@ land_cover_dir = os.path.join(DATA_DIR, "GlobalLandcover")
 
 district_shape_file = os.path.join(DATA_DIR, 'RwandaDistricts.zip')
 # print(f"District path: {district_shape_file}")
+
+# todo: Define 'tw' and 'ts' based on empirical data or literature
+tw = ee.Number(10)  # Wet baseline temperature in Celsius
+ts = ee.Number(45)  # Dry baseline temperature in Celsius

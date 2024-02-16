@@ -14,6 +14,8 @@ from contextlib import contextmanager
 import plotly.express as px
 import plotly.graph_objects as go
 
+from utils import defineROI
+
 matplotlib.use('Agg')
 
 def load_data_for_crop(crop):
@@ -25,14 +27,6 @@ def load_data_for_crop(crop):
         potato_file = os.path.join(DATA_DIR, 'Rwanda_locations_potato.csv')
         df = pd.read_csv(potato_file)
     return df
-
-def defineROI(district_name, gdf):
-    area = None
-    for _, row in gdf.iterrows():
-        if row['NAME_2'] == district_name:
-            area = shape(row['geometry'])
-            return area  # Return the ROI immediately after it's found
-    return area
 
 # ----------------------------------------------------- #
 #                   TAB 1 PLOT FUNCTIONS                #

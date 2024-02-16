@@ -1,10 +1,20 @@
-import os
+from ee_init import initialize_ee
+initialize_ee()
+
+import json, dash
+import folium
+import tempfile
 import pandas as pd
-from constants import land_cover_dir, district_shape_file
+from datetime import date
 from dash import Dash, dcc, html, Input, Output, callback, dash_table, State
-from step_one import load_data_for_crop, plot_plots_in_data, plot_districts_with_plotly, hectares_to_square_edges
 import geopandas as gpd
 from shapely.geometry import Polygon
+
+# Functions and variables from each tab file
+from utils import defineROI
+from constants import land_cover_dir, district_shape_file
+from step_one import load_data_for_crop, plot_plots_in_data, plot_districts_with_plotly, hectares_to_square_edges
+from step_two import satellite_dict, add_ee_layer, integrate_indices_to_dataframe, calculate_satellite_dates
 
 app = Dash(__name__, suppress_callback_exceptions=True)
 
@@ -14,12 +24,15 @@ app.layout = html.Div([
         value='tab-1', 
         children=[
             dcc.Tab(label='Step 1: Load and Extract Fields Data', value='tab-1', id='tab-1', className='custom-tab', selected_className='custom-tab--selected'),
-            dcc.Tab(label='Step 2: Preprocessing', value='tab-2', id='tab-2', className='custom-tab', selected_className='custom-tab--selected'),
+            dcc.Tab(label='Step 2: Satellite Data Extraction', value='tab-2', id='tab-2', className='custom-tab', selected_className='custom-tab--selected'),
             dcc.Tab(label='Step 3: Prediction', value='tab-3', id='tab-3', className='custom-tab', selected_className='custom-tab--selected'),
         ],
         className='custom-tabs'
     ),
     html.Div(id='tabs-content'),
+    # define the data storage globally
+    dcc.Store(id='stored-data'),  # To store the filtered DataFrame
+    dcc.Store(id='gdf-data'), # To store the GDF DataFrame
 ], style={'textAlign': 'center'})
 
 # ----------------------------------------------------- #
@@ -44,8 +57,6 @@ def tab_1_content():
         dcc.Dropdown(id='year-selection-dropdown', style={'display': 'none'})
     ], id='dynamic-input-container'), # Container for dynamic objects
     html.Div(id='csv-data-table'),  # Container for displaying CSV data
-    
-    dcc.Store(id='stored-data'),  # To store the filtered DataFrame
     html.Button('Show Districts', id='btn-show-districts', n_clicks=0),
     html.Button('Show Plots', id='btn-show-plots', n_clicks=0),
     html.Button('Create Plots Box', id='btn-plots-box', n_clicks=0),
@@ -176,7 +187,7 @@ def show_plots(n_clicks, stored_data):
     return html.Div()
 
 @app.callback(
-    Output('plots-map-box', 'children'),
+    Output('gdf-data', 'data'),
     [Input('btn-plots-box', 'n_clicks')],
     [State('stored-data', 'data')]
 )
@@ -193,15 +204,26 @@ def show_plots_box(n_clicks, stored_data):
         # Convert the dataframe to a GeoDataFrame
         gdf = gpd.GeoDataFrame(df, geometry='geometry', crs="EPSG:4326")
 
-        # Generate the base64-encoded image
-        encoded_image = plot_plots_in_data(df)
+        # Instead of directly returning an image, save the modified DataFrame to 'modified-data'
+        return gdf.to_json()  # Convert GeoDataFrame to JSON for storage
+    
+    return dash.no_update  # Use dash.no_update when there's no update to the store
+
+@app.callback(
+    Output('plots-map-box', 'children'),
+    [Input('gdf-data', 'data'), Input('btn-plots-box', 'n_clicks')]
+)
+def update_image(gdf_data, n_clicks):
+    if gdf_data and n_clicks > 0:
+        # Deserialize the JSON string into a dictionary
+        gdf_dict = json.loads(gdf_data)
         
-        # Use the `html.Img` component to display the image directly from the base64 string
+        # Create a GeoDataFrame from the 'features' key of the GeoJSON dictionary
+        gdf = gpd.GeoDataFrame.from_features(gdf_dict['features'], crs="EPSG:4326")
+
+        encoded_image = plot_plots_in_data(gdf)  # Assuming this function now accepts a GeoDataFrame
         return html.Img(src=f"data:image/png;base64,{encoded_image}")
-
-    # If no image is to be displayed, return an empty `div`
     return html.Div()
-
 
 # ----------------------------------------------------- #
 #                   TAB 2 CONTENT                       #
@@ -209,10 +231,186 @@ def show_plots_box(n_clicks, stored_data):
 
 def tab_2_content():
     return html.Div([
-        html.H3('Step 2 Content Here'),
-        # Add more content here
-    ])
+    dcc.Store(id='stored-data'),  # To store the filtered DataFrame
 
+    html.Div([
+        html.Label("Satellite name:"),
+        dcc.Dropdown(
+            id='dropdown-Satellite',
+            options=[{'label': sat_name, 'value': sat} for (sat_name, sat) in satellite_dict.items()],
+            value='',
+            searchable=True,
+            placeholder="Select Satellite...",
+            style={'min-width': '200px'})
+    ], style={'display': 'inline-block', 'margin-left': '60px', 'margin-right': '20px'}),
+
+    html.Div([
+        html.Label("Time of Interest: "),
+        dcc.DatePickerRange(
+            id='time-of-interest',
+            min_date_allowed=date(2016, 1, 1),
+            max_date_allowed=date.today(),
+            initial_visible_month=date(2020, 1, 1),
+            end_date=date.today()
+        )
+    ], style={'display': 'inline-block', 'margin-right': '20px'}),
+
+    html.Div([
+        dcc.Checklist(id='cloud-mask-checkbox',
+                    options=[{'label': 'Mask Clouds', 'value': 'cloud_mask'}],
+                    value=['cloud_mask']
+                    ),
+
+        dcc.Checklist(
+                    id='filter-checkbox',
+                    options=[{'label': 'Use MA Filter', 'value': 'filters'}],
+                    value=[]
+    )
+    ], style={'display': 'inline-block', 'margin-right': '20px'}),
+
+    html.Div([
+        html.Button('Submit', id='submit-val', n_clicks=0),
+    ], style={'display': 'inline-block', 'margin-right': '20px'}),
+
+    html.Div([
+        html.Label("Spectral indices"),
+        dcc.Checklist(
+            id='index-checkboxes',
+            options=[
+                {'label': 'NDVI', 'value': 'NDVI'},
+                {'label': 'EVI', 'value': 'EVI'},
+                {'label': 'SAVI', 'value': 'SAVI'}
+                # Add more indices as needed
+            ],
+            value=[]
+        )
+    ]),
+    
+    html.Div([
+        html.Iframe(
+            id='map-iframe',
+            srcDoc='',
+            style={'width': '100%', 'height': '600px'}
+        )
+    ]),
+
+    html.Div(id='output-info')
+])
+
+@app.callback(
+    Output('map-iframe', 'srcDoc'),
+    [Input('submit-val', 'n_clicks'),
+     Input('gdf-data', 'data')
+     ],
+    [State('dropdown-Satellite', 'value'),
+     State('time-of-interest', 'start_date'),
+     State('time-of-interest', 'end_date'),
+     State('cloud-mask-checkbox', 'value'),
+     State('filter-checkbox', 'value'),
+     State('index-checkboxes', 'value')
+    ]
+)
+def update_map(n_clicks, gdf_data, satellite, start_date, end_date, mask_clouds, use_filters,indices):
+    
+    # Generate and save the map
+    country_lon = 29.8739
+    country_lat = -1.9403
+    
+    # Add the Earth Engine layer method to folium.
+    folium.Map.add_ee_layer = add_ee_layer
+    
+    base_map = folium.Map(location=[country_lat, country_lon], zoom_start=9)
+    
+    if base_map:
+        # Add a layer control panel to the map.
+        baseMap = base_map._repr_html_()
+        
+        if n_clicks > 0:
+            # Deserialize the JSON string into a dictionary
+            gdf_dict = json.loads(gdf_data)
+            
+            # Create a GeoDataFrame from the 'features' key of the GeoJSON dictionary
+            df = gpd.GeoDataFrame.from_features(gdf_dict['features'], crs="EPSG:4326")
+            print(df.columns)
+
+            # Before Getting Satellite Images
+            df['start_date'], df['end_date'] = zip(*df.apply(lambda row: calculate_satellite_dates(row['year'], row['season'], 90, 120), axis=1))
+            band_image = None
+
+            if satellite.startswith('LANDSAT'):
+                print("Landsat selected")
+                df['start_date_cswi'], df['end_date_cswi'] = zip(*df.apply(lambda row: calculate_satellite_dates(row['year'], row['season'], 45, 85), axis=1))
+                band_image, df = integrate_indices_to_dataframe(df, 'LANDSAT')
+            else:
+                print("Sentinel selected")
+                band_image, df = integrate_indices_to_dataframe(df, 'Sentinel')
+
+            print('*'*20,df.columns)
+            # img_collection = importLandsat(start_date, end_date, roi, data=satellite)
+            base_map = folium.Map(location=[country_lat, country_lon], zoom_start=9)
+           
+        #     if mask_clouds:
+        #         # Mask clouds
+        #         img_collection = img_collection.map(maskCloudLandsat) if satellite.startswith('LANDSAT') else img_collection.map(maskCloudSentinel)
+
+        #     img_collection = img_collection.map(apply_scale_factors) if satellite.startswith('LANDSAT') else img_collection.map(SentinelOptical)
+
+        #     if use_filters:
+        #         # Apply filters
+        #         img_collection = img_collection.map(applyMovingAvg) 
+
+        #     cloud_free_composite = img_collection.map(lambda img: img.clip(roi)).median()
+
+        #     min_, max_, _ = imageStats(cloud_free_composite,roi, satellite) 
+        #     bands = ['SR_B4', 'SR_B3', 'SR_B2'] if satellite.startswith('LANDSAT') else ['B4', 'B3', 'B2']
+
+        #     vis_params = {
+        #         'bands': bands,
+        #         'min': min_,
+        #         'max': max_,
+        #         'gamma': 1
+        #     }  
+
+            
+        #     base_map.add_ee_layer(cloud_free_composite,
+        #         vis_params,
+        #         'EE-Image', True)
+
+        #     if 'NDVI' in indices:
+        #         cloud_free_composite = add_NDVI(cloud_free_composite)#.map(add_NDVI)
+        #         base_map.add_ee_layer(cloud_free_composite,
+        #         ndvi_params,
+        #         'NDVI', True,0.9)
+                
+        #     if 'EVI' in indices:
+        #         cloud_free_composite = add_EVI(cloud_free_composite)#.map(add_EVI)
+        #         base_map.add_ee_layer(cloud_free_composite,
+        #         evi_params,
+        #         'EVI', True,0.9)
+
+        #     if 'SAVI' in indices:
+        #         cloud_free_composite = add_SAVI(cloud_free_composite)#.map(add_SAVI)
+        #         base_map.add_ee_layer(cloud_free_composite,
+        #         savi_params,
+        #         'SAVI', True,0.9)
+
+            
+            base_map.add_ee_layer(band_image)
+            baseMap = base_map.add_child(folium.LayerControl())._repr_html_()          
+          
+        # Save the map to a temporary HTML file
+        tmp_html = tempfile.NamedTemporaryFile(suffix='.html').name
+        with open(tmp_html, 'w') as f:
+            f.write(baseMap)
+
+        return open(tmp_html).read()
+    
+    else:
+        return None
+
+# ----------------------------------------------------- #
+#                   TAB 2 CONTENT                       #
+# ----------------------------------------------------- #
 def tab_3_content():
     return html.Div([
         html.H3('Step 3 Content Here'),
