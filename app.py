@@ -1,7 +1,7 @@
 from ee_init import initialize_ee
 initialize_ee()
 
-import json, dash
+import json, dash, os
 import folium
 import tempfile
 import pandas as pd
@@ -12,9 +12,12 @@ from shapely.geometry import Polygon
 
 # Functions and variables from each tab file
 from utils import defineROI
-from constants import land_cover_dir, district_shape_file
+from constants import DATA_DIR, district_shape_file
 from step_one import load_data_for_crop, plot_plots_in_data, plot_districts_with_plotly, hectares_to_square_edges
 from step_two import satellite_dict, add_ee_layer, integrate_indices_to_dataframe, calculate_satellite_dates
+from step_three import load_features_for_crop, preprocess_features, scale_y
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
 
 app = Dash(__name__, suppress_callback_exceptions=True)
 
@@ -33,6 +36,10 @@ app.layout = html.Div([
     # define the data storage globally
     dcc.Store(id='stored-data'),  # To store the filtered DataFrame
     dcc.Store(id='gdf-data'), # To store the GDF DataFrame
+    dcc.Store(id='features-df-store'), # Stores the features for modeling
+    dcc.Store(id='preprocessing-df-store'), # Stores the selected features for processing
+    dcc.Store(id='modeling-df-store'), # Stores the data after preprocessing
+    dcc.Store(id='test-data-store') # 
 ], style={'textAlign': 'center'})
 
 # ----------------------------------------------------- #
@@ -40,7 +47,7 @@ app.layout = html.Div([
 # ----------------------------------------------------- #
 # Separate functions for each tab's content
 def tab_1_content():
-    return     html.Div([
+    return html.Div([
         html.Label('Select Crop:', style={'fontSize': 20, 'marginBottom': '10px'}),
         dcc.Dropdown(
             id='crop-selection-dropdown',
@@ -409,14 +416,315 @@ def update_map(n_clicks, gdf_data, satellite, start_date, end_date, mask_clouds,
         return None
 
 # ----------------------------------------------------- #
-#                   TAB 2 CONTENT                       #
+#                   TAB 3 CONTENT                       #
 # ----------------------------------------------------- #
 def tab_3_content():
     return html.Div([
-        html.H3('Step 3 Content Here'),
-        # Add more content here
-    ])
+        html.Div([
+            dcc.Dropdown(id='selected-crop-dropdown', placeholder='Selected Crop', disabled=True),
+            html.Button('Load CSV', id='load-csv-button')
+        ]),
+        html.Div(id='csv-data-table-container'),
+        html.Div([
+            dcc.Dropdown(id='features-dropdown', multi=True, placeholder="Select Features"),
+            html.Div(id='filtered-features-table-container'),  # Container for the second data table
+            html.Button('Preprocess Data', id='preprocess-button'),
+        ]),
+        dcc.Dropdown(
+            id='model-selection-dropdown',
+            options=[
+                {'label': 'Random Forest Regressor', 'value': 'RFR'},
+                {'label': 'Linear Regression', 'value': 'LR'},
+                {'label': 'Gradient Boosting Regressor', 'value': 'GBR'},
+                {'label': 'Ridge Regression', 'value': 'Ridge'},
+                {'label': 'Support Vector Regressor', 'value': 'SVR'},
+                {'label': 'Lasso Regression', 'value': 'Lasso'}
+            ],
+            value='RFR'  # Default value
+        ),
+        html.Div([
+            html.Button('Fit Model', id='fit-model-button'),
+            html.Div(id='model-metrics-output', children="Is model fit?", style={'whiteSpace': 'pre-line'})
+        ]),
+        html.Button('Predict', id='predict-button'),
+        html.Div(id='prediction-metrics-output', children="Is model fit?", style={'whiteSpace': 'pre-line'})
+    ], style={
+        'width': '50%', 
+        'margin': '0 auto', 
+        'border': '2px solid #ddd', 
+        'borderRadius': '15px', 
+        'padding': '20px',
+        'boxShadow': '2px 2px 10px #aaa'
+    })
 
+
+@app.callback(
+    [Output('selected-crop-dropdown', 'options'),
+     Output('selected-crop-dropdown', 'value')],
+    [Input('gdf-data', 'data')]
+)
+def update_crop_selection(gdf_data):
+    if gdf_data:
+        # Load GeoJSON data
+        features = json.loads(gdf_data)['features']
+        
+        # Extract properties to a list of dictionaries
+        properties_list = [feature['properties'] for feature in features]
+        
+        # Convert properties to DataFrame
+        properties_df = pd.DataFrame(properties_list)
+        
+        # Now, you can proceed as before
+        crops = properties_df['crop'].unique().tolist()
+        crop_value = crops[0] if crops else None
+        options = [{'label': crop, 'value': crop} for crop in crops]
+        
+        return options, crop_value
+    
+    # Return empty options and None value if there's no data
+    return [], None
+
+@app.callback(
+    [Output('csv-data-table-container', 'children'),
+     Output('features-df-store', 'data')],
+    [Input('load-csv-button', 'n_clicks')],
+    [State('selected-crop-dropdown', 'value'),
+     State('gdf-data', 'data')],
+    prevent_initial_call=True
+)
+def load_and_display_csv(n_clicks, value, gdf_data):
+    if n_clicks:
+        df = load_features_for_crop(value)
+        
+        if gdf_data:
+            # Parse the GeoJSON to extract districts
+            features = json.loads(gdf_data)['features']
+            districts = [feature['properties']['district'] for feature in features if 'district' in feature['properties']]
+
+            # Filter the DataFrame based on the extracted districts
+            df = df[df['district'].isin(districts)]
+
+        # Store the filtered DataFrame in dcc.Store
+        filtered_df_json = df.to_json(date_format='iso', orient='split')
+        
+        # Display the filtered DataFrame in a DataTable
+        data_table = dash_table.DataTable(
+            df.to_dict('records'),
+            [{'name': i, 'id': i} for i in df.columns],
+            style_table={'overflowX': 'auto'},
+            page_size=10
+        )
+
+        return data_table, filtered_df_json
+    return None, None
+
+@app.callback(
+    Output('features-dropdown', 'options'),
+    [Input('features-df-store', 'data')]
+)
+def update_features_dropdown(filtered_df_json):
+    if filtered_df_json:
+        df = pd.read_json(filtered_df_json, orient='split')
+
+        # Remove 'yield_kg_ph' from the list of columns
+        if 'yield_kg_ph' and 'yield_kg_pa' in df.columns:
+            df = df.drop(columns=['yield_kg_ph', 'yield_kg_pa'])
+
+        # Ensure you're working with strings; apply .str.strip() to remove any leading/trailing whitespace
+        # Then check for non-empty strings across all columns
+        # This operation is safe as it converts all types to string before stripping
+        non_empty_columns = [col for col in df.columns if df[col].astype(str).str.strip().any()]
+
+        # Additionally, filter out entirely NaN columns if not already excluded
+        non_null_columns = [col for col in non_empty_columns if df[col].notnull().any()]
+
+        # Combine the filters: non-null and non-empty string columns, excluding 'yield_kg_ph'
+        final_columns = non_null_columns
+        print(len(final_columns))
+
+        return [{'label': col, 'value': col} for col in final_columns]
+
+    return []
+
+@app.callback(
+    Output('preprocessing-df-store', 'data'),
+    [Input('features-dropdown', 'value')],
+    [State('features-df-store', 'data')]
+)
+def update_filtered_features_store(selected_features, original_df_json):
+    if selected_features and original_df_json:
+        df = pd.read_json(original_df_json, orient='split')
+        
+        # Filter the DataFrame to keep only selected features
+        filtered_df = df[selected_features]
+        
+        # Return the filtered DataFrame as JSON
+        return filtered_df.to_json(date_format='iso', orient='split')
+    
+    # If no features are selected, return None or keep the original data
+    return original_df_json
+
+@app.callback(
+    Output('filtered-features-table-container', 'children'),
+    [Input('preprocessing-df-store', 'data')]
+)
+def display_filtered_features_table(filtered_df_json):
+    if filtered_df_json:
+        filtered_df = pd.read_json(filtered_df_json, orient='split')
+        
+        # Create and return a DataTable for the filtered DataFrame
+        return dash_table.DataTable(
+            data=filtered_df.to_dict('records'),
+            columns=[{'name': i, 'id': i} for i in filtered_df.columns],
+            style_table={'overflowX': 'auto'},
+            page_size=10  # Adjust as needed
+        )
+    
+    # If there's no data, return an empty div or a message
+    return html.Div("No data selected.")
+
+@app.callback(
+    Output('modeling-df-store', 'data'),  # Assuming you have dcc.Store to hold preprocessed data
+    [Input('preprocess-button', 'n_clicks')],
+    [State('preprocessing-df-store', 'data'), 
+     State('features-df-store', 'data')]  # Your stored DataFrame with selected features
+)
+def preprocess_data(n_clicks, features_df_json, all_features_df):
+    if n_clicks and features_df_json:
+        X_preprocessed = preprocess_features(features_df_json)
+        print("X processing done ...")
+
+        print('processing y')
+        y_scaled = scale_y(all_features_df)
+
+        # Properly serialize both X and y into JSON
+        preprocessed_data_json = json.dumps({"X": X_preprocessed.tolist(), "y": y_scaled.tolist()})
+
+        print('Saving preprocessed data to store')
+        return preprocessed_data_json
+    return None
+
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.svm import SVR
+import json
+import numpy as np
+from joblib import dump, load
+
+@app.callback(
+    Output('model-metrics-output', 'children'),  # Output to display model metrics
+    [Input('fit-model-button', 'n_clicks')],
+    [State('model-selection-dropdown', 'value'),
+     State('modeling-df-store', 'data')]  # Preprocessed data
+)
+def fit_model(n_clicks, selected_model, preprocessed_data_json):
+    if n_clicks and preprocessed_data_json:
+        print('modeling')
+        data = json.loads(preprocessed_data_json)
+        X = np.array(data["X"])
+        y = np.array(data["y"])
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        # Select the model based on dropdown selection
+        if selected_model == 'LR':
+            model = LinearRegression()
+        elif selected_model == 'RFR':
+            model = RandomForestRegressor(n_estimators=100, random_state=42)
+        elif selected_model == 'GBR':
+            model = GradientBoostingRegressor(random_state=42)
+        elif selected_model == 'Ridge':
+            model = Ridge(random_state=42)
+        elif selected_model == 'SVR':
+            model = SVR()
+        elif selected_model == 'Lasso':
+            model = Lasso(random_state=42)
+        
+        # Fit the model
+        model.fit(X_train, y_train)
+
+        # Instead of returning the model, return a message indicating success
+        model_message = f"Model {selected_model} fitted. Use 'Predict' to evaluate."
+
+        # Save the fitted model to disk
+        model_filename = f'model_{selected_model}.pkl'
+        model_path = os.path.join(DATA_DIR, model_filename)
+        print(f"model file: {model_path}")
+        dump(model, model_path)
+        
+        print(model_message)
+        return model_message
+    return "No model has been fit yet."
+
+@app.callback(
+    Output('test-data-store', 'data'),  # dcc.Store to hold test data
+    [Input('fit-model-button', 'n_clicks')],
+    [State('model-selection-dropdown', 'value'),
+     State('modeling-df-store', 'data')]
+)
+def store_test_data(n_clicks, selected_model, preprocessed_data_json):
+    if n_clicks and preprocessed_data_json:
+        data = json.loads(preprocessed_data_json)
+        X = np.array(data["X"])
+        y = np.array(data["y"])
+
+        # Splitting the data
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        # Convert test data to list for JSON serialization
+        test_data_json = json.dumps({
+            "X_test": X_test.tolist(), 
+            "y_test": y_test.tolist()
+        })
+
+        print("Test data set")
+        return test_data_json
+    return None
+
+@app.callback(
+    Output('prediction-metrics-output', 'children'),  # Output for displaying prediction metrics
+    [Input('predict-button', 'n_clicks')],
+    [State('test-data-store', 'data'),
+     State('model-selection-dropdown', 'value')]  # Assuming test data is stored here
+)
+def predict_and_evaluate(n_clicks, test_data_json, selected_model):
+    if n_clicks:
+        print('Evaluating')
+        # Deserialize test data
+        test_data = json.loads(test_data_json)
+        X_test = np.array(test_data["X_test"])
+        y_test = np.array(test_data["y_test"])
+
+        print("X, y test data found")
+        # Load the model
+        model_filename = f'model_{selected_model}.pkl'
+        model_path = os.path.join(DATA_DIR, model_filename)
+
+        print(f"Path 2 model: {model_path}")
+        
+        model = load(model_path)
+        print('Model loaded')
+
+        # Perform predictions
+        y_pred = model.predict(X_test)
+
+        print("predictions made")
+        # Calculate metrics
+        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+
+        std_dev = np.std(y_test)
+        mean = np.mean(y_test)
+
+        metrics_message = f'Root Mean Squared Error: {rmse} \nStandard deviation: {std_dev} \nMean: {mean}'
+        print(metrics_message)
+        
+        return metrics_message
+    return "No predictions made yet."
+
+
+# ----------------------------------------------------- #
+#                   TABS JOINER                        #
+# ----------------------------------------------------- #
 @callback(Output('tabs-content', 'children'),
           Input('tabs', 'value'))
 def render_content(tab):
