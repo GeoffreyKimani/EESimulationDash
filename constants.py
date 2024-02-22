@@ -19,3 +19,7 @@ district_shape_file = os.path.join(DATA_DIR, 'RwandaDistricts.zip')
 # todo: Define 'tw' and 'ts' based on empirical data or literature
 tw = ee.Number(10)  # Wet baseline temperature in Celsius
 ts = ee.Number(45)  # Dry baseline temperature in Celsius
+
+# Placeholders awaiting implementation
+potential_yield_factor = 1.2
+model_yield_factor = 0.8

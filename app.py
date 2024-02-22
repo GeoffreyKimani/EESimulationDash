@@ -19,6 +19,9 @@ from step_three import load_features_for_crop, preprocess_features, scale_y
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 
+# Functions for Yield Gap Tab
+from yield_tab import create_legend, create_rwanda_map, aggregate_data, color_map
+
 app = Dash(__name__, suppress_callback_exceptions=True)
 
 app.layout = html.Div([
@@ -29,6 +32,7 @@ app.layout = html.Div([
             dcc.Tab(label='Step 1: Load and Extract Fields Data', value='tab-1', id='tab-1', className='custom-tab', selected_className='custom-tab--selected'),
             dcc.Tab(label='Step 2: Satellite Data Extraction', value='tab-2', id='tab-2', className='custom-tab', selected_className='custom-tab--selected'),
             dcc.Tab(label='Step 3: Prediction', value='tab-3', id='tab-3', className='custom-tab', selected_className='custom-tab--selected'),
+            dcc.Tab(label='Yield Gap', value='tab-yield-gap')  # New tab for Yield Gap
         ],
         className='custom-tabs'
     ),
@@ -39,7 +43,7 @@ app.layout = html.Div([
     dcc.Store(id='features-df-store'), # Stores the features for modeling
     dcc.Store(id='preprocessing-df-store'), # Stores the selected features for processing
     dcc.Store(id='modeling-df-store'), # Stores the data after preprocessing
-    dcc.Store(id='test-data-store') # 
+    dcc.Store(id='test-data-store'), # Stores the data for model evaluation
 ], style={'textAlign': 'center'})
 
 # ----------------------------------------------------- #
@@ -500,9 +504,11 @@ def load_and_display_csv(n_clicks, value, gdf_data):
             # Parse the GeoJSON to extract districts
             features = json.loads(gdf_data)['features']
             districts = [feature['properties']['district'] for feature in features if 'district' in feature['properties']]
+            years = [feature['properties']['year'] for feature in features if 'year' in feature['properties']]
 
             # Filter the DataFrame based on the extracted districts
             df = df[df['district'].isin(districts)]
+            df = df[df['year'].isin(years)]
 
         # Store the filtered DataFrame in dcc.Store
         filtered_df_json = df.to_json(date_format='iso', orient='split')
@@ -529,18 +535,19 @@ def update_features_dropdown(filtered_df_json):
         # Remove 'yield_kg_ph' from the list of columns
         if 'yield_kg_ph' and 'yield_kg_pa' in df.columns:
             df = df.drop(columns=['yield_kg_ph', 'yield_kg_pa'])
-
+                    
         # Ensure you're working with strings; apply .str.strip() to remove any leading/trailing whitespace
         # Then check for non-empty strings across all columns
         # This operation is safe as it converts all types to string before stripping
         non_empty_columns = [col for col in df.columns if df[col].astype(str).str.strip().any()]
+        print(f"All columns: {len(df.columns)} vs Non-empty columns: {len(non_empty_columns)}")
 
         # Additionally, filter out entirely NaN columns if not already excluded
         non_null_columns = [col for col in non_empty_columns if df[col].notnull().any()]
 
         # Combine the filters: non-null and non-empty string columns, excluding 'yield_kg_ph'
         final_columns = non_null_columns
-        print(len(final_columns))
+        print(f"Final cleaned columns: {len(final_columns)}")
 
         return [{'label': col, 'value': col} for col in final_columns]
 
@@ -723,6 +730,272 @@ def predict_and_evaluate(n_clicks, test_data_json, selected_model):
 
 
 # ----------------------------------------------------- #
+#                   YIELD GAP TAB                       #
+# ----------------------------------------------------- #
+
+def tab_yield_content():
+    map_iframe = html.Iframe(
+                id='yield-iframe',
+                width='100%',
+                height='100%',  # Adjust height as needed
+                style={"border": '2px solid lightgrey', 'border-radius': '8px'}
+            )
+    
+    # Container for the map and the input controls side by side
+    map_and_controls_container = html.Div([
+        # Container for the map
+        html.Div([map_iframe], style={'width': '70%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+        
+        # Container for the input controls
+        html.Div([
+            # Container for the crop selection with label
+            html.Div([
+                html.Label('Crops:', style={'display': 'inline-block', 'margin-right': '10px'}),
+                dcc.RadioItems(
+                    id='crop-checklist',
+                    options=[
+                        {'label': 'Maize', 'value': 'maize'},
+                        {'label': 'Potatoes', 'value': 'potato'},
+                        {'label': 'Other', 'value': 'other'}
+                    ],
+                    value='maize',
+                    labelStyle={'display': 'block'},
+                    style={'border': '1px solid #ddd', 'padding': '10px', 'border-radius': '5px'}
+                ),
+            ], style={'margin-bottom': '10px'}),
+
+            # Container for year selection
+            html.Div([
+                html.Label('Year Selection:', style={'display': 'inline-block', 'margin-right': '10px'}),
+                
+                # Map indicators
+                dcc.Dropdown(
+                    id='year-dropdown',
+                    options=[
+                        # {'label': 'All', 'value': 'all'},
+                        {'label': '2016', 'value': 2016},
+                        {'label': '2019', 'value': 2019},
+                        {'label': '2020', 'value': 2020},
+                        
+                        ],
+                    value=2016,
+                    multi=False,
+                    style={"width": "100%", "marginBottom": '20px'}
+                        ),
+            ], style={'margin-bottom': '10px'}),
+
+            # Container for season selection
+            html.Div([
+                html.Label('Season Selection:', style={'display': 'inline-block', 'margin-right': '10px'}),
+                
+                # Map indicators
+                dcc.RadioItems(
+                    id='season-checklist',
+                    options=[
+                        {'label': 'Season A', 'value': 'a season'},
+                        {'label': 'Season B', 'value': 'b season'},
+                        # {'label': 'Aggregate Seasons', 'value': 'all'}
+                    ],
+                    value='a season',
+                    style={'border': '1px solid #ddd', 'padding': '10px', 'border-radius': '5px'}
+                ),
+            ], style={'margin-bottom': '10px'}),
+
+            # Container for the map indicators with label
+            html.Div([
+                html.Label('Map Indicators:', style={'display': 'inline-block', 'margin-right': '10px'}),
+                
+                # Map indicators
+                dcc.RadioItems(
+                    id='map-indicators-radioitems',
+                    options=[
+                        {'label': 'Actual Yield', 'value': 'actual_yield'},
+                        {'label': 'Potential Yield', 'value': 'potential_yield'},
+                        {'label': 'Predicted Yield', 'value': 'predicted_yield'},
+                        {'label': 'Yield Gap', 'value': 'yield_gap'},
+                    ],
+                    value='actual_yield',
+                    style={'border': '1px solid #ddd', 'padding': '10px', 'border-radius': '5px'}
+                ),
+            ], style={'margin-bottom': '10px'}),
+
+            # Container for the new Variable selection with label
+            html.Div([
+                html.Label('Aggregation:', style={'display': 'inline-block', 'margin-right': '10px'}),
+                dcc.Dropdown(
+                    id='variable-dropdown',
+                    options=[
+                        {'label': 'Mean Value', 'value': 'mean_value'},
+                        {'label': 'Sum Total', 'value': 'sum_total'}
+                    ],
+                    placeholder="Select Variable", value='mean_value',
+                    style={'display': 'inline-block', 'width': 'calc(100% - 100px)'}  # Adjust width as necessary
+                ),
+            ], style={'margin-bottom': '10px'}),
+
+            # Crop mask
+            html.Div([
+                html.Label('Apply crop mask?', style={'display': 'inline-block', 'margin-right': '10px'}),
+                dcc.RadioItems(
+                    id='crop-mask-radioitems',
+                    options=[
+                        {'label': 'No', 'value': 'no'},
+                        {'label': 'Yes', 'value': 'yes'}
+                    ],
+                    value='no',  # Default selected value
+                    labelStyle={'display': 'inline-block', 'margin-right': '15px'},
+                    style={'display': 'inline-block'}
+                ),
+            ], style={'margin-bottom': '10px'})
+        ], style={'width': '30%', 'display': 'inline-block', 'padding': '10px', 'verticalAlign': 'top', 'boxSizing': 'border-box'}),
+    ], style={'display': 'flex', 'flexWrap': 'wrap', 'width': '100%', 'margin-top': '20px'})
+
+    # Container for the table and the legend
+    table_container = html.Div([
+        # Legend; create_legend() returns a Div with the legend items
+        create_legend(),
+
+        # Table
+        html.Div([
+            html.Label('Filtered Data:', style={'margin-bottom': '5px'}),
+            dash_table.DataTable(
+                id='aggregated-data-table',
+                style_table={'overflowX': 'auto'},
+                page_size=10  # Adjust as per your requirement
+            )
+        ], style={'display': 'inline-block', 'verticalAlign': 'top', 'width': 'calc(100% - 260px)'}),
+
+    ], style={'display': 'flex', 'alignItems': 'flex-start', 'justifyContent': 'flex-end', 'marginTop': '20px'})
+
+    # Return the layout that includes the map iframe
+    return html.Div([
+                    dcc.Store(id='aggregated-data-store'),
+                    map_and_controls_container,
+                    table_container], 
+                    style={'border': '2px solid #ddd', 
+                            'borderRadius': '15px', 
+                            'padding': '20px',
+                            'boxShadow': '2px 2px 10px #aaa'})
+
+# @app.callback(
+#         Output('yield-iframe', 'srcDoc'),
+#         [
+#             Input('crop-checklist', 'value'),
+#             State('aggregated-data-table', 'data'),
+#         ]
+# )
+# def update_base_map(crop, aggregated_data):
+#     baseMap = create_rwanda_map()
+
+#     # Save the map to a temporary HTML file
+#     with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as tmp:
+#         baseMap.save(tmp.name)
+#         tmp.close()
+#         # Read the content of this temporary file into a string
+#         with open(tmp.name, 'r') as f:
+#             html_string = f.read()
+
+#     # Delete the temporary file now that we've read it into a string
+#     os.unlink(tmp.name)
+
+#     # Color the map
+#     print("DF in map?")
+#     print(aggregated_data)
+#     color_map(aggregated_data)
+
+#     return html_string
+
+# @app.callback(
+#     Output('aggregated-data-table', 'data'),
+#     Output('aggregated-data-table', 'columns'),
+#     [   Input('crop-checklist', 'value'),
+#         Input('year-dropdown', 'value'),
+#         Input('season-checklist', 'value'),
+#         Input('variable-dropdown', 'value'),
+#         Input('map-indicators-radioitems', 'value')]
+# )
+# def update_table(crop, years_filter, season_filter, aggregation_type, map_idx):
+#     # Call your aggregate_data function
+#     df_aggregated = aggregate_data(crop, years_filter, season_filter, aggregation_type, map_idx)
+
+#     # Convert the DataFrame into a format suitable for the DataTable
+#     data = df_aggregated.to_dict('records')
+#     columns = [{'name': i, 'id': i} for i in df_aggregated.columns]
+
+#     return data, columns
+
+@app.callback(
+    Output('aggregated-data-store', 'data'),
+    [Input('crop-checklist', 'value'),
+     Input('year-dropdown', 'value'),
+     Input('season-checklist', 'value'),
+     Input('variable-dropdown', 'value'),
+     Input('map-indicators-radioitems', 'value')]
+)
+def store_aggregated_data(crop, years_filter, season_filter, aggregation_type, map_idx):
+    df_aggregated = aggregate_data(crop, years_filter, season_filter, aggregation_type, map_idx)
+    return df_aggregated.to_json(date_format='split', orient='split')
+
+# @app.callback(
+#     Output('yield-iframe', 'srcDoc'),
+#     [Input('aggregated-data-store', 'data')]
+# )
+# def update_base_map(aggregated_data_json):
+#     if aggregated_data_json:
+#         # Deserialize the JSON string to DataFrame
+#         df_aggregated = pd.read_json(aggregated_data_json, orient='split')
+
+#         # Create the base map with coloring based on the aggregated data
+#         baseMap = create_rwanda_map()
+#         map_ = color_map(df_aggregated) # coloring logic using df_aggregated
+
+#         # Save the map to a temporary HTML file and read the content
+#         with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as tmp:
+#             baseMap.save(tmp.name)
+#             tmp.close()
+#             with open(tmp.name, 'r') as f:
+#                 html_string = f.read()
+#         os.unlink(tmp.name)
+#         return html_string
+#     return "Please select filters to display the map."
+
+@app.callback(
+    Output('yield-iframe', 'srcDoc'),
+    [Input('aggregated-data-store', 'data')]
+)
+def update_base_map(aggregated_data_json):
+    if aggregated_data_json:
+        # Deserialize the JSON string to DataFrame
+        df_aggregated = pd.read_json(aggregated_data_json, orient='split')
+
+        # Create the colored map
+        rwanda_map = color_map(df_aggregated)
+
+        # Save the map to a temporary HTML file and read the content
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as tmp:
+            rwanda_map.save(tmp.name)
+            tmp.close()
+            with open(tmp.name, 'r') as f:
+                html_string = f.read()
+        os.unlink(tmp.name)
+        return html_string
+    return "Please select filters to display the map."
+
+@app.callback(
+    [Output('aggregated-data-table', 'data'),
+     Output('aggregated-data-table', 'columns')],
+    [Input('aggregated-data-store', 'data')]
+)
+def update_table(aggregated_data_json):
+    if aggregated_data_json:
+        df_aggregated = pd.read_json(aggregated_data_json, orient='split')
+        data = df_aggregated.to_dict('records')
+        columns = [{'name': i, 'id': i} for i in df_aggregated.columns]
+        return data, columns
+    return [], []
+
+
+# ----------------------------------------------------- #
 #                   TABS JOINER                        #
 # ----------------------------------------------------- #
 @callback(Output('tabs-content', 'children'),
@@ -734,6 +1007,8 @@ def render_content(tab):
         return tab_2_content()
     elif tab == 'tab-3':
         return tab_3_content()
+    elif tab == 'tab-yield-gap':
+        return tab_yield_content()
 
 if __name__ == '__main__':
     app.run_server(debug=True)
