@@ -32,7 +32,6 @@ evi_params = {'bands':['EVI'],
                            'max': 1.0,
                            'palette': ['blue', 'orange', 'brown', 'lightgreen', 'green', 'darkgreen']
             }
-
 savi_params = {'bands':['SAVI'],
                            'min': -1.0,
                            'max': 1.0,
