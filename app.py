@@ -11,6 +11,12 @@ from dash import Dash, dcc, html, Input, Output, callback, dash_table, State
 import geopandas as gpd
 from shapely.geometry import Polygon
 
+# from dash.dependencies import Input, Output
+import tempfile
+from ee_imageCol import *
+import plotly.graph_objs as go
+
+
 # Functions and variables from each tab file
 from utils import defineROI
 from constants import DATA_DIR, district_shape_file
@@ -243,8 +249,6 @@ def update_image(gdf_data, n_clicks):
 
 def tab_2_content():
     return html.Div([
-    dcc.Store(id='stored-data'),  # To store the filtered DataFrame
-
     html.Div([
         html.Label("Satellite name:"),
         dcc.Dropdown(
@@ -254,15 +258,28 @@ def tab_2_content():
             searchable=True,
             placeholder="Select Satellite...",
             style={'min-width': '200px'})
-    ], style={'display': 'inline-block', 'margin-left': '60px', 'margin-right': '20px'}),
+    ],   
+    style={'display': 'inline-block', 'margin-left': '60px', 'margin-right': '20px'}),
+
+    html.Div([
+        html.Label("District name:"),
+        dcc.Dropdown(
+            id='dropdown-district',
+            options=[{'label': name, 'value': name} for name in district_names],
+            value='',
+            searchable=True,
+            placeholder="Select or type your district...",
+            style={'min-width': '200px'})
+    ],  
+    style={'display': 'inline-block', 'margin-right': '20px'}),
 
     html.Div([
         html.Label("Time of Interest: "),
         dcc.DatePickerRange(
             id='time-of-interest',
-            min_date_allowed=date(2016, 1, 1),
+            min_date_allowed=date(2000, 1, 1),
             max_date_allowed=date.today(),
-            initial_visible_month=date(2020, 1, 1),
+            initial_visible_month=date(2023, 6, 1),
             end_date=date.today()
         )
     ], style={'display': 'inline-block', 'margin-right': '20px'}),
@@ -279,6 +296,7 @@ def tab_2_content():
                     value=[]
     )
     ], style={'display': 'inline-block', 'margin-right': '20px'}),
+
 
     html.Div([
         html.Button('Submit', id='submit-val', n_clicks=0),
@@ -297,6 +315,15 @@ def tab_2_content():
             value=[]
         )
     ]),
+
+     html.Div([
+        dcc.Input(id='year-input', type='number', placeholder='Enter year'),
+        html.Button('View Indices', id='toggle-indices-btn', n_clicks=0),
+    ]),
+    
+    html.Div(id='indices-content', children=[
+        'Add indices'
+    ]),
     
     html.Div([
         html.Iframe(
@@ -307,107 +334,84 @@ def tab_2_content():
     ]),
 
     html.Div(id='output-info')
-])
+    ])
 
 @app.callback(
     Output('map-iframe', 'srcDoc'),
-    [Input('submit-val', 'n_clicks'),
-     Input('gdf-data', 'data')
-     ],
-    [State('dropdown-Satellite', 'value'),
-     State('time-of-interest', 'start_date'),
-     State('time-of-interest', 'end_date'),
-     State('cloud-mask-checkbox', 'value'),
-     State('filter-checkbox', 'value'),
-     State('index-checkboxes', 'value')
+    [Input('submit-val', 'n_clicks')],
+    [dash.dependencies.State('dropdown-Satellite', 'value'),
+     dash.dependencies.State('dropdown-district', 'value'),
+     dash.dependencies.State('time-of-interest', 'start_date'),
+     dash.dependencies.State('time-of-interest', 'end_date'),
+     dash.dependencies.State('cloud-mask-checkbox', 'value'),
+     dash.dependencies.State('filter-checkbox', 'value'),
+     dash.dependencies.State('index-checkboxes', 'value')
     ]
 )
-def update_map(n_clicks, gdf_data, satellite, start_date, end_date, mask_clouds, use_filters,indices):
+def update_map(n_clicks, satellite, district, start_date, end_date, mask_clouds, use_filters,indices):
     
     # Generate and save the map
     country_lon = 29.8739
     country_lat = -1.9403
-    
-    # Add the Earth Engine layer method to folium.
-    folium.Map.add_ee_layer = add_ee_layer
-    
-    base_map = folium.Map(location=[country_lat, country_lon], zoom_start=9)
+
+    base_map = folium.Map(location=[country_lat, country_lon], zoom_start=10)
     
     if base_map:
         # Add a layer control panel to the map.
         baseMap = base_map._repr_html_()
         
         if n_clicks > 0:
-            # Deserialize the JSON string into a dictionary
-            gdf_dict = json.loads(gdf_data)
-            
-            # Create a GeoDataFrame from the 'features' key of the GeoJSON dictionary
-            df = gpd.GeoDataFrame.from_features(gdf_dict['features'], crs="EPSG:4326")
-            print(df.columns)
-
-            # Before Getting Satellite Images
-            df['start_date'], df['end_date'] = zip(*df.apply(lambda row: calculate_satellite_dates(row['year'], row['season'], 90, 120), axis=1))
-            band_image = None
-
-            if satellite.startswith('LANDSAT'):
-                print("Landsat selected")
-                df['start_date_cswi'], df['end_date_cswi'] = zip(*df.apply(lambda row: calculate_satellite_dates(row['year'], row['season'], 45, 85), axis=1))
-                band_image, df = integrate_indices_to_dataframe(df, 'LANDSAT')
-            else:
-                print("Sentinel selected")
-                band_image, df = integrate_indices_to_dataframe(df, 'Sentinel')
-
-            print('*'*20,df.columns)
-            # img_collection = importLandsat(start_date, end_date, roi, data=satellite)
-            base_map = folium.Map(location=[country_lat, country_lon], zoom_start=9)
+            roi = defineAOI(district)
+            img_collection = importLandsat(start_date, end_date, roi, data=satellite)
+            center = roi.centroid(10).coordinates().reverse().getInfo()
+            base_map = folium.Map(location=center, zoom_start=10)
            
-        #     if mask_clouds:
-        #         # Mask clouds
-        #         img_collection = img_collection.map(maskCloudLandsat) if satellite.startswith('LANDSAT') else img_collection.map(maskCloudSentinel)
+            if mask_clouds:
+                # Mask clouds
+                img_collection = img_collection.map(maskCloudLandsat) if satellite.startswith('LANDSAT') else img_collection.map(maskCloudSentinel)
 
-        #     img_collection = img_collection.map(apply_scale_factors) if satellite.startswith('LANDSAT') else img_collection.map(SentinelOptical)
+            img_collection = img_collection.map(landsat_scale_factors) if satellite.startswith('LANDSAT') else img_collection.map(Sentinel_scale_factors)
 
-        #     if use_filters:
-        #         # Apply filters
-        #         img_collection = img_collection.map(applyMovingAvg) 
+            if use_filters:
+                # Apply filters
+                img_collection = img_collection.map(applyMovingAvg) 
 
-        #     cloud_free_composite = img_collection.map(lambda img: img.clip(roi)).median()
+            cloud_free_composite = img_collection.map(lambda img: img.clip(roi)).median()
 
-        #     min_, max_, _ = imageStats(cloud_free_composite,roi, satellite) 
-        #     bands = ['SR_B4', 'SR_B3', 'SR_B2'] if satellite.startswith('LANDSAT') else ['B4', 'B3', 'B2']
+            min_, max_, _ = imageStats(cloud_free_composite,roi, satellite) if satellite.startswith('LANDSAT') else (0.0, 0.3, None)
+            bands = ['SR_B4', 'SR_B3', 'SR_B2'] if satellite.startswith('LANDSAT') else ['B4', 'B3', 'B2']
 
-        #     vis_params = {
-        #         'bands': bands,
-        #         'min': min_,
-        #         'max': max_,
-        #         'gamma': 1
-        #     }  
+            vis_params = {
+                'bands': bands,
+                'min': min_,
+                'max': max_,
+                # 'gamma': 1
+            }  
 
             
-        #     base_map.add_ee_layer(cloud_free_composite,
-        #         vis_params,
-        #         'EE-Image', True)
+            base_map.add_ee_layer(cloud_free_composite,
+                vis_params,
+                'EE-Image', True)
 
-        #     if 'NDVI' in indices:
-        #         cloud_free_composite = add_NDVI(cloud_free_composite)#.map(add_NDVI)
-        #         base_map.add_ee_layer(cloud_free_composite,
-        #         ndvi_params,
-        #         'NDVI', True,0.9)
+            if 'NDVI' in indices:
+                cloud_free_composite = add_NDVI(cloud_free_composite) if satellite.startswith('LANDSAT') else add_NDVIsentinel(cloud_free_composite)
+                base_map.add_ee_layer(cloud_free_composite,
+                ndvi_params,
+                'NDVI', True,0.9)
                 
-        #     if 'EVI' in indices:
-        #         cloud_free_composite = add_EVI(cloud_free_composite)#.map(add_EVI)
-        #         base_map.add_ee_layer(cloud_free_composite,
-        #         evi_params,
-        #         'EVI', True,0.9)
+            if 'EVI' in indices:
+                cloud_free_composite = add_EVI(cloud_free_composite) if satellite.startswith('LANDSAT') else add_EVIsentinel(cloud_free_composite)
+                base_map.add_ee_layer(cloud_free_composite,
+                evi_params,
+                'EVI', True,0.9)
 
-        #     if 'SAVI' in indices:
-        #         cloud_free_composite = add_SAVI(cloud_free_composite)#.map(add_SAVI)
-        #         base_map.add_ee_layer(cloud_free_composite,
-        #         savi_params,
-        #         'SAVI', True,0.9)
+            if 'SAVI' in indices:
+                cloud_free_composite = add_SAVI(cloud_free_composite) if satellite.startswith('LANDSAT') else add_SAVIsentinel(cloud_free_composite)
+                base_map.add_ee_layer(cloud_free_composite,
+                savi_params,
+                'SAVI', True,0.9)
 
             
-            base_map.add_ee_layer(band_image)
             baseMap = base_map.add_child(folium.LayerControl())._repr_html_()          
           
         # Save the map to a temporary HTML file
@@ -419,6 +423,77 @@ def update_map(n_clicks, gdf_data, satellite, start_date, end_date, mask_clouds,
     
     else:
         return None
+ 
+   # Add Indices time series plot
+@app.callback(
+    Output('indices-content', 'children'),
+    [Input('toggle-indices-btn', 'n_clicks')],
+    [dash.dependencies.State('index-checkboxes', 'value'),
+    dash.dependencies.State('year-input', 'value'),
+    dash.dependencies.State('dropdown-Satellite', 'value'),
+    dash.dependencies.State('dropdown-district', 'value'),]
+)
+def toggle_indices_content(n_clicks, indices, year, satellite, district):
+    if n_clicks % 2 == 1 and indices and year:
+        roi = defineAOI(district)
+        img_collection = importLandsat(f'{year}-01-01', f'{year}-12-31', roi, data=satellite)
+        img_collection = img_collection.map(maskCloudLandsat) if satellite.startswith('LANDSAT') else img_collection.map(maskCloudSentinel)
+        img_collection = img_collection.map(lambda img: img.clip(roi)).map(landsat_scale_factors) if satellite.startswith('LANDSAT') else img_collection.map(Sentinel_scale_factors)
+        indices_dict = {}
+        if 'NDVI' in indices: 
+            img_collection = img_collection.map(add_NDVI)  if satellite.startswith('LANDSAT') else img_collection.map(add_NDVIsentinel) 
+            monthly_ndvi = aggregate_monthly(img_collection, 'NDVI')
+            monthly_ndvi_dict = extract_values(ee.ImageCollection(monthly_ndvi), 'NDVI', roi).getInfo() 
+            indices_dict['NDVI'] = [x['properties']['value'] for x in monthly_ndvi_dict['features']]
+                    
+        if 'EVI' in indices: 
+            img_collection = img_collection.map(add_EVI) if satellite.startswith('LANDSAT') else img_collection.map(add_EVIsentinel)
+            monthly_evi = aggregate_monthly(img_collection, 'EVI')         
+            monthly_evi_dict = extract_values(ee.ImageCollection(monthly_evi), 'EVI', roi).getInfo()
+            indices_dict['EVI'] = [x['properties']['value'] for x in monthly_evi_dict['features']]
+            
+        if 'SAVI' in indices: 
+            img_collection = img_collection.map(add_SAVI) if satellite.startswith('LANDSAT') else img_collection.map(add_SAVIsentinel)
+            monthly_savi = aggregate_monthly(img_collection, 'SAVI')
+            monthly_savi_dict = extract_values(ee.ImageCollection(monthly_savi), 'SAVI', roi).getInfo()
+            indices_dict['SAVI'] = [x['properties']['value'] for x in monthly_savi_dict['features']]            
+        
+        try:
+            plots = []
+
+            for index in indices:
+                # Generate random data for the plot
+                x = list(range(1, 13))
+                y = indices_dict[index]
+
+                # Create a line plot
+                trace = go.Scatter(
+                    x=x,
+                    y=y,
+                    mode='lines',
+                    name=f'{index}'
+                )
+
+                plots.append(trace)
+
+            return dcc.Graph(
+                id='indices-plot',
+                figure={
+                    'data': plots,
+                    'layout': go.Layout(
+                        title=f'Indices Time Series for {district} district',
+                        xaxis=dict(title='Months'),
+                        yaxis=dict(title='Index Value'),
+                        hovermode='closest'
+                    )
+                 }
+                 )
+            
+        except:
+            return ['Select Index, satellites, roi, and year']
+        
+    else:
+        return []
 
 # ----------------------------------------------------- #
 #                   TAB 3 CONTENT                       #
