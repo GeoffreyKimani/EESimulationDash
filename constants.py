@@ -23,3 +23,10 @@ ts = ee.Number(45)  # Dry baseline temperature in Celsius
 # Placeholders awaiting implementation
 potential_yield_factor = 1.2
 model_yield_factor = 0.8
+
+rsa_colors = {
+    '26738A': '#26738A',
+    '6DCFF2': '#6DCFF2',
+    
+
+}

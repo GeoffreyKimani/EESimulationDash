@@ -6,6 +6,7 @@ import folium
 import tempfile
 import pandas as pd
 from datetime import date
+import dash_bootstrap_components as dbc
 from dash import Dash, dcc, html, Input, Output, callback, dash_table, State
 import geopandas as gpd
 from shapely.geometry import Polygon
@@ -20,9 +21,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 
 # Functions for Yield Gap Tab
-from yield_tab import create_legend, create_rwanda_map, aggregate_data, color_map
+from yield_tab import create_rwanda_map, aggregate_data, color_map
 
-app = Dash(__name__, suppress_callback_exceptions=True)
+app = Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 app.layout = html.Div([
     dcc.Tabs(
@@ -733,149 +734,92 @@ def predict_and_evaluate(n_clicks, test_data_json, selected_model):
 #                   YIELD GAP TAB                       #
 # ----------------------------------------------------- #
 
+from components.yield_tab_components import layout_container, table_and_button_container, SIDEBAR_EXPANDED_STYLE, SIDEBAR_COLLAPSED_STYLE, SIDEBAR_HEADER_COLLAPSED_STYLE, SIDEBAR_HEADER_EXPANDED_STYLE
 def tab_yield_content():
-    map_iframe = html.Iframe(
-                id='yield-iframe',
-                width='100%',
-                height='100%',  # Adjust height as needed
-                style={"border": '2px solid lightgrey', 'border-radius': '8px'}
-            )
-    
-    # Container for the map and the input controls side by side
-    map_and_controls_container = html.Div([
-        # Container for the map
-        html.Div([map_iframe], style={'width': '70%', 'display': 'inline-block', 'verticalAlign': 'top'}),
-        
-        # Container for the input controls
-        html.Div([
-            # Container for the crop selection with label
-            html.Div([
-                html.Label('Crops:', style={'display': 'inline-block', 'margin-right': '10px'}),
-                dcc.RadioItems(
-                    id='crop-checklist',
-                    options=[
-                        {'label': 'Maize', 'value': 'maize'},
-                        {'label': 'Potatoes', 'value': 'potato'},
-                        {'label': 'Other', 'value': 'other'}
-                    ],
-                    value='maize',
-                    labelStyle={'display': 'block'},
-                    style={'border': '1px solid #ddd', 'padding': '10px', 'border-radius': '5px'}
-                ),
-            ], style={'margin-bottom': '10px'}),
-
-            # Container for year selection
-            html.Div([
-                html.Label('Year Selection:', style={'display': 'inline-block', 'margin-right': '10px'}),
-                
-                # Map indicators
-                dcc.Dropdown(
-                    id='year-dropdown',
-                    options=[
-                        # {'label': 'All', 'value': 'all'},
-                        {'label': '2016', 'value': 2016},
-                        {'label': '2019', 'value': 2019},
-                        {'label': '2020', 'value': 2020},
-                        
-                        ],
-                    value=2016,
-                    multi=False,
-                    style={"width": "100%", "marginBottom": '20px'}
-                        ),
-            ], style={'margin-bottom': '10px'}),
-
-            # Container for season selection
-            html.Div([
-                html.Label('Season Selection:', style={'display': 'inline-block', 'margin-right': '10px'}),
-                
-                # Map indicators
-                dcc.RadioItems(
-                    id='season-checklist',
-                    options=[
-                        {'label': 'Season A', 'value': 'a season'},
-                        {'label': 'Season B', 'value': 'b season'},
-                        # {'label': 'Aggregate Seasons', 'value': 'all'}
-                    ],
-                    value='a season',
-                    style={'border': '1px solid #ddd', 'padding': '10px', 'border-radius': '5px'}
-                ),
-            ], style={'margin-bottom': '10px'}),
-
-            # Container for the map indicators with label
-            html.Div([
-                html.Label('Map Indicators:', style={'display': 'inline-block', 'margin-right': '10px'}),
-                
-                # Map indicators
-                dcc.RadioItems(
-                    id='map-indicators-radioitems',
-                    options=[
-                        {'label': 'Actual Yield', 'value': 'actual_yield'},
-                        {'label': 'Potential Yield', 'value': 'potential_yield'},
-                        {'label': 'Predicted Yield', 'value': 'predicted_yield'},
-                        {'label': 'Yield Gap', 'value': 'yield_gap'},
-                    ],
-                    value='actual_yield',
-                    style={'border': '1px solid #ddd', 'padding': '10px', 'border-radius': '5px'}
-                ),
-            ], style={'margin-bottom': '10px'}),
-
-            # Container for the new Variable selection with label
-            html.Div([
-                html.Label('Aggregation:', style={'display': 'inline-block', 'margin-right': '10px'}),
-                dcc.Dropdown(
-                    id='variable-dropdown',
-                    options=[
-                        {'label': 'Mean Value', 'value': 'mean_value'},
-                        {'label': 'Sum Total', 'value': 'sum_total'}
-                    ],
-                    placeholder="Select Variable", value='mean_value',
-                    style={'display': 'inline-block', 'width': 'calc(100% - 100px)'}  # Adjust width as necessary
-                ),
-            ], style={'margin-bottom': '10px'}),
-
-            # Crop mask
-            html.Div([
-                html.Label('Apply crop mask?', style={'display': 'inline-block', 'margin-right': '10px'}),
-                dcc.RadioItems(
-                    id='crop-mask-radioitems',
-                    options=[
-                        {'label': 'No', 'value': 'no'},
-                        {'label': 'Yes', 'value': 'yes'}
-                    ],
-                    value='no',  # Default selected value
-                    labelStyle={'display': 'inline-block', 'margin-right': '15px'},
-                    style={'display': 'inline-block'}
-                ),
-            ], style={'margin-bottom': '10px'})
-        ], style={'width': '30%', 'display': 'inline-block', 'padding': '10px', 'verticalAlign': 'top', 'boxSizing': 'border-box'}),
-    ], style={'display': 'flex', 'flexWrap': 'wrap', 'width': '100%', 'margin-top': '20px'})
-
-    # Container for the table and the legend
-    table_container = html.Div([
-        # Legend; create_legend() returns a Div with the legend items
-        create_legend(),
-
-        # Table
-        html.Div([
-            html.Label('Filtered Data:', style={'margin-bottom': '5px'}),
-            dash_table.DataTable(
-                id='aggregated-data-table',
-                style_table={'overflowX': 'auto'},
-                page_size=10  # Adjust as per your requirement
-            )
-        ], style={'display': 'inline-block', 'verticalAlign': 'top', 'width': 'calc(100% - 260px)'}),
-
-    ], style={'display': 'flex', 'alignItems': 'flex-start', 'justifyContent': 'flex-end', 'marginTop': '20px'})
-
     # Return the layout that includes the map iframe
     return html.Div([
                     dcc.Store(id='aggregated-data-store'),
-                    map_and_controls_container,
-                    table_container], 
-                    style={'border': '2px solid #ddd', 
+                    layout_container, table_and_button_container
+                    ], 
+                    style={ 'position': 'relative',
+                            'height': '100%', 
+                            'border': '2px solid #ddd', 
                             'borderRadius': '15px', 
                             'padding': '20px',
                             'boxShadow': '2px 2px 10px #aaa'})
+
+@app.callback(
+[
+Output('sidebar', 'style'),
+Output('sidebar-header', 'style'),
+Output('controls-container', 'style')
+],
+[Input('toggle-sidebar-button', 'n_clicks')],
+[State('sidebar', 'style')]
+)
+def toggle_sidebar(n_clicks, sidebar_style):
+    if n_clicks and n_clicks % 2 == 1:
+        # Sidebar is collapsed
+        return (SIDEBAR_COLLAPSED_STYLE, SIDEBAR_HEADER_COLLAPSED_STYLE, {'display': 'none'})
+    else:
+        # Sidebar is expanded
+        return (SIDEBAR_EXPANDED_STYLE, SIDEBAR_HEADER_EXPANDED_STYLE, {'display': 'block'})
+
+# @app.callback(
+#     Output('sidebar', 'style'),
+#     Output('map-container', 'style'),
+#     Input('toggle-sidebar-button', 'n_clicks'),
+#     State('sidebar', 'style'),
+# )
+# def toggle_sidebar(n_clicks, sidebar_style):
+#     if n_clicks % 2 == 1:  # If sidebar is to be collapsed
+#         return SIDEBAR_COLLAPSED_STYLE, MAP_CONTAINER_STYLE
+#     else
+#         : # If sidebar is to be expanded
+#         return SIDEBAR_EXPANDED_STYLE, MAP_CONTAINER_STYLE
+
+# Callback to toggle the visibility of the table and link container
+@app.callback(
+    Output('table-and-link-container', 'style'),
+    [Input('toggle-table-button', 'n_clicks')],
+    [State('table-and-link-container', 'style')]
+)
+def toggle_table(n, style):
+    if n % 2 == 0:
+        style['display'] = 'block'  # Show the container
+    else:
+        style['display'] = 'none'  # Hide the container
+    return style
+
+
+# Adjust the callback to modify the flexGrow property of the map container
+@app.callback(
+    Output('map-container', 'style'),
+    Input('toggle-sidebar-button', 'n_clicks'),
+)
+def adjust_map_width(n_clicks):
+    if n_clicks and n_clicks % 2 == 1:  # If sidebar is collapsed
+        return {'flexGrow': 1, 'transition': 'flex-grow 0.5s ease'}  # Map expands
+    else:  # If sidebar is expanded
+        return {'flexGrow': 0, 'transition': 'flex-grow 0.5s ease'}  # Map squeezes
+    
+# @app.callback(
+#     [Output("table-container", "style"),
+#      Output("toggle-table-button", "children")],
+#     [Input("toggle-table-button", "n_clicks")],
+#     [State("table-container", "style")],
+# )
+# def toggle_table(n_clicks, table_style):
+#     if n_clicks % 2 == 0:
+#         # Table is visible, shrink to a small strip
+#         table_style["height"] = "5%"
+#         table_style["minHeight"] = "20px"  # Ensure it does not disappear completely
+#         button_children = [html.I(className="fas fa-arrow-up")]  # Change icon to arrow-up
+#     else:
+#         # Table is shrunk, expand it
+#         table_style["height"] = "100%"
+#         button_children = [html.I(className="fas fa-arrow-down")] # Change icon to arrow-down
+#     return table_style, button_children
 
 # @app.callback(
 #         Output('yield-iframe', 'srcDoc'),

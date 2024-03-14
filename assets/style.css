@@ -11,3 +11,36 @@
     color: white;
     border: 1px solid #05b5e6;
 }
+
+/* Toggle Button */
+.toggle-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 30px;
+    height: 30px;
+    background-color: #fff; /* White background */
+    border: 1px solid #05b5e6; /* Remove border */
+    cursor: pointer; /* Pointer cursor on hover */
+    outline: none; /* Remove outline */
+    z-index: 2; /* Ensure it's above other content */
+}
+
+.toggle-button:before {
+    content: ''; /* Arrow icon will be created using borders */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(90deg); /* Rotate arrow to point left */
+    border: solid black; /* Black arrow color */
+    border-width: 0 2px 2px 0; /* Arrow shape */
+    padding: 3px; /* Arrow size */
+    display: inline-block;
+}
+
+/* Style to rotate arrow icon when sidebar is collapsed */
+.sidebar-collapsed .toggle-button:before {
+    transform: translate(-50%, -50%) rotate(-90deg); /* Rotate arrow to point right */
+}
+
+/* Sidebar */
