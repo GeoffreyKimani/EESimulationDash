@@ -43,4 +43,43 @@
     transform: translate(-50%, -50%) rotate(-90deg); /* Rotate arrow to point right */
 }
 
+/* Style for btns */
+.button-primary-hover-sm {
+    transition-duration: 0.4s;
+    display: inline-block;
+    border-radius: 5px;
+    border: none;
+    text-align: center;
+    font-size: 20px;
+    padding: 2px;
+    width: 150px;
+    transition: all 0.5s;
+    cursor: pointer;
+    margin: 5px;
+  }
+
+  .button-primary-hover-lg {
+    transition-duration: 0.4s;
+    display: inline-block;
+    border-radius: 5px;
+    border: none;
+    text-align: center;
+    font-size: 20px;
+    padding: 2px;
+    width: 200px;
+    transition: all 0.5s;
+    cursor: pointer;
+    margin: 5px;
+  }
+  
+  .button-primary-hover-sm:hover {
+    background-color: #008CBA; /* Blue */
+    color: white;
+  }
+
+  .button-primary-hover-lg:hover {
+    background-color: #008CBA; /* Blue */
+    color: white;
+  }
+
 /* Sidebar */
