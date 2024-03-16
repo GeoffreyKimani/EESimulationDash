@@ -860,21 +860,8 @@ def tab_3_content():
         "boxShadow": "0 4px 8px rgba(0,0,0,0.1)",
     }
 
-    button_style = {
-        "margin": "10px",
-        "lineHeight": "60px",
-        "borderRadius": "8px",
-        "border": "none",
-        "color": "white",
-        "background-color": "#007BFF",
-        "padding": "0 20px",
-        "fontSize": "1rem",
-        "fontWeight": "400",
-    }
-
     dropdown_style = {
         "marginBottom": "20px",
-        "borderRadius": "8px",
         "border": "1px solid #ccc",
     }
 
@@ -886,8 +873,19 @@ def tab_3_content():
         "fontWeight": "500",
     }
 
+    box_style = {
+        "position": "relative",
+        "height": "100%",
+        "border": "1px solid #ddd",
+        "borderRadius": "5px",
+        "padding": "20px",
+        "marginTop": "10px",
+        "boxShadow": "2px 2px 10px #aaa",
+    }
+
     return html.Div(
         [
+            html.Div([
             html.Label("Selected Crop", style=label_style),
             dcc.Dropdown(
                 id="selected-crop-dropdown",
@@ -895,11 +893,13 @@ def tab_3_content():
                 disabled=True,
                 style=dropdown_style,
             ),
-            html.Button("Load CSV", id="load-csv-button", style=button_style),
+            html.Button("Load CSV", id="load-csv-button", className = "button-predicted"),
             html.Div(
                 id="csv-data-table-container",
                 style={"width": "100%", "overflowX": "auto"},
             ),
+            ], style=box_style),
+            html.Div([
             html.Label("Select Features", style=label_style),
             dcc.Dropdown(
                 id="features-dropdown",
@@ -910,8 +910,10 @@ def tab_3_content():
             html.Div(
                 id="filtered-features-table-container",
                 style={"width": "100%", "overflowX": "auto"},
-            ),  # Container for the second data table
-            html.Button("Preprocess Data", id="preprocess-button", style=button_style),
+            ),  
+            html.Button("Preprocess Data", id="preprocess-button", className = "button-predicted"),
+            ], style=box_style), # Container for the second data table
+            html.Div([
             html.Label("Model Selection", style=label_style),
             dcc.Dropdown(
                 id="model-selection-dropdown",
@@ -926,18 +928,19 @@ def tab_3_content():
                 value="RFR",
                 style=dropdown_style,
             ),
-            html.Button("Fit Model", id="fit-model-button", style=button_style),
+            html.Button("Fit Model", id="fit-model-button", className = "button-predicted"),
             html.Div(
                 id="model-metrics-output",
                 children="Model fitting results will appear here",
-                style={"whiteSpace": "pre-line", "marginTop": "20px"},
-            ),
-            html.Button("Predict", id="predict-button", style=button_style),
+                style={"whiteSpace": "pre-line", "marginTop": "0px"},
+            ),], style=box_style),
+            html.Div([
+            html.Button("Predict", id="predict-button", className = "button-predicted"),
             html.Div(
                 id="prediction-metrics-output",
                 children="Prediction results will appear here",
                 style={"whiteSpace": "pre-line", "marginTop": "20px"},
-            ),
+            ),], style=box_style),
         ],
         style=content_style,
     )
@@ -1115,7 +1118,7 @@ def display_filtered_features_table(filtered_df_json):
         )
 
     # If there's no data, return an empty div or a message
-    return html.Div("No data selected.")
+    return html.Div("No data has been selected.")
 
 
 @app.callback(
@@ -1201,7 +1204,7 @@ def fit_model(n_clicks, selected_model, preprocessed_data_json):
 
         print(model_message)
         return model_message
-    return "No model has been fit yet."
+    return html.Div("No model has been fit yet.")
 
 
 @app.callback(
@@ -1272,7 +1275,14 @@ def predict_and_evaluate(n_clicks, test_data_json, selected_model):
         print(metrics_message)
 
         return metrics_message
-    return "No predictions made yet."
+    return html.Div("No predictions made yet.",style={
+            "position": "relative",
+            "height": "100%",
+            "border": "2px solid #ddd",
+            "borderRadius": "15px",
+            "padding": "20px",
+            "boxShadow": "2px 2px 10px #aaa",
+        },)
 
 
 # ----------------------------------------------------- #
