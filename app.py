@@ -767,18 +767,6 @@ def tab_3_content():
         "boxShadow": "0 4px 8px rgba(0,0,0,0.1)",
     }
 
-    button_style = {
-        "margin": "10px",
-        "lineHeight": "60px",
-        "borderRadius": "8px",
-        "border": "none",
-        "color": "white",
-        "background-color": "#007BFF",
-        "padding": "0 20px",
-        "fontSize": "1rem",
-        "fontWeight": "400",
-    }
-
     dropdown_style = {
         "marginBottom": "20px",
         "borderRadius": "8px",
@@ -802,7 +790,7 @@ def tab_3_content():
                 disabled=True,
                 style=dropdown_style,
             ),
-            html.Button("Load CSV", id="load-csv-button", style=button_style),
+            html.Button("Load CSV", id="load-csv-button", className = "button-predicted"),
             html.Div(
                 id="csv-data-table-container",
                 style={"width": "100%", "overflowX": "auto"},
@@ -818,7 +806,7 @@ def tab_3_content():
                 id="filtered-features-table-container",
                 style={"width": "100%", "overflowX": "auto"},
             ),  # Container for the second data table
-            html.Button("Preprocess Data", id="preprocess-button", style=button_style),
+            html.Button("Preprocess Data", id="preprocess-button", className = "button-predicted"),
             html.Label("Model Selection", style=label_style),
             dcc.Dropdown(
                 id="model-selection-dropdown",
@@ -833,13 +821,13 @@ def tab_3_content():
                 value="RFR",
                 style=dropdown_style,
             ),
-            html.Button("Fit Model", id="fit-model-button", style=button_style),
+            html.Button("Fit Model", id="fit-model-button", className = "button-predicted"),
             html.Div(
                 id="model-metrics-output",
                 children="Model fitting results will appear here",
                 style={"whiteSpace": "pre-line", "marginTop": "20px"},
             ),
-            html.Button("Predict", id="predict-button", style=button_style),
+            html.Button("Predict", id="predict-button", className = "button-predicted"),
             html.Div(
                 id="prediction-metrics-output",
                 children="Prediction results will appear here",
