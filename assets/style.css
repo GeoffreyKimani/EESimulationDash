@@ -35,7 +35,7 @@
     border: solid black; /* Black arrow color */
     border-width: 0 2px 2px 0; /* Arrow shape */
     padding: 3px; /* Arrow size */
-    display: inline-block;
+    display: none;
 }
 
 /* Style to rotate arrow icon when sidebar is collapsed */
@@ -81,5 +81,12 @@
     background-color: #008CBA; /* Blue */
     color: white;
   }
+
+  /* Hover effect for Dash DataTable */
+.dash-spreadsheet-container .dash-spreadsheet-inner tr:hover {
+  background-color: rgba(0, 116, 217, 0.1);
+  border: 1px solid rgba(0, 116, 217, 0.6);
+}
+
 
 /* Sidebar */

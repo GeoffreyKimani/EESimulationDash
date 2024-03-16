@@ -1,6 +1,7 @@
 # Layout imports
 from dash import dcc, html, dash_table
 from yield_tab import create_legend
+import dash_bootstrap_components as dbc
 
 # ----------------------------------------------------- #
 #                   LAYOUT CONTENT                      #
@@ -9,16 +10,26 @@ from yield_tab import create_legend
 map_iframe = html.Iframe(
     id="yield-iframe",
     width="100%",
-    height="60%",  # Adjust height as needed
+    height="480px",  # Adjust height as needed
     style={"border": "2px solid lightgrey", "border-radius": "8px", "zIndex": 0},
 )
+
+# # Step: Create accordion container
+# map_container = html.Div(
+#     dbc.AccordionItem([])
+#     # id="accordion-container",
+#     # children=[map_iframe],
+#     # style={"width": "100%", "height": "80%", "position": "relative", "flex": "1"},
+# )
+
 
 # Step 1: Create the map container
 map_container = html.Div(
     id="map-container",
     children=[map_iframe],
-    style={"width": "100%", "height": "80%", "position": "relative", "flex": "1"},
+    style={"width": "100%", "height": "480px", "position": "relative", "flex": "1"},
 )
+
 
 # ----------------------------------------------------- #
 #                    SIDE BAR CONTROLS                  #
@@ -43,27 +54,28 @@ SIDEBAR_HEADER_COLLAPSED_STYLE = {
     "position": "fixed",
     "top": 0,
     "left": 0,
-    "writingMode": "vertical-rl",
-    "textOrientation": "upright",
+    "writingMode": "vertical-lr",
+    "textOrientation": " sideways-right",
     "zIndex": "1",
-    "padding": "15px 11px 15px 12px"
+    "padding": "15px 11px 15px 6px",
+    "font-size": "x-large",
 }
 
 # CSS for the entire sidebar when collapsed
 SIDEBAR_COLLAPSED_STYLE = {
-    "flex": "0 0 30px",  # 30px width, do not grow or shrink
-    "maxWidth": "30px",
-    "minWidth": "30px",
-    "height": "100%",
-    "width": "30px",
-    "backgroundColor": "#6DCFF2",
-    # 'position': 'fixed',
-    "position": "relative",
-    "top": 0,
-    "left": 0,
-    "zIndex": "1",
-    "overflowX": "visible",
-    "height": "100vh",
+    "width": "40px",  # Set the width of the collapsed sidebar
+    "maxWidth": "40px",  # Max width same as the width to prevent expansion
+    "minWidth": "40px",  # Min width same as the width to prevent contraction
+    "height": "100vh",  # Full height of the viewport
+    "position": "fixed",  # Fixed position to stay in place on scroll
+    "top": "60px",  # Distance from the top, adjust to be below the navbar
+    "left": 0,  # Align to the left of the viewport
+    "backgroundColor": "#6DCFF2",  # Background color, adjust to your preference
+    "zIndex": "1000",  # Ensure it's above other content but below modals/popups
+    "overflowX": "hidden",  # Hide horizontal overflow
+    "overflowY": "hidden",  # Hide vertical overflow
+    "transition": "all 0.5s ease",  # Transition for the collapsing action
+    "border": "none",  # No border for the collapsed sidebar
 }
 
 # CSS for the expanded sidebar
@@ -146,7 +158,7 @@ controls_container = html.Div(
                     [
                         html.Label(
                             "Season Selection:",
-                           style={
+                            style={
                                 "display": "inline-block",
                             },
                         ),
@@ -221,7 +233,7 @@ controls_container = html.Div(
                             ],
                             placeholder="Select Variable",
                             value="mean_value",
-                             style={"width": "100%", "marginBottom": "20px"},
+                            style={"width": "100%", "marginBottom": "20px"},
                         ),
                     ],
                     style={"margin-bottom": "10px", "padding-left": "20px"},
@@ -266,7 +278,8 @@ sidebar = html.Div(
     id="sidebar",
     children=[
         html.Button(
-            children=[],  # No content needed, we'll use CSS for the arrow icon
+            html.I(className="fa fa-chevron-left"),
+            # children=[],  # No content needed, we'll use CSS for the arrow icon
             id="toggle-sidebar-button",
             className="toggle-button",
             n_clicks=0,
@@ -304,17 +317,31 @@ toggle_table_button = html.Button("Toggle Table", id="toggle-table-button", n_cl
 # Container for the table and the legend
 table_container = html.Div(
     [
-        # html.Label('Filtered Data:', style={'margin-bottom': '5px'}),
         dash_table.DataTable(
             id="aggregated-data-table",
             style_table={"overflowX": "auto"},
+            style_cell={  # General style for each cell
+                "minWidth": "80px",
+                "width": "80px",
+                "maxWidth": "80px",
+                "overflow": "hidden",
+                "textOverflow": "ellipsis",
+                "textAlign": "center",
+            },
+            style_header={  # Style for header cells
+                "backgroundColor": "white",
+                "fontWeight": "bold",
+                "textAlign": "center",
+            },
+            style_data={"textAlign": "center"},  # Style for data cells
             page_size=10,  # Adjust as per your requirement
         )
     ],
     style={
-        "width": "calc(100% - 260px)",
+        "width": "85%",
         "display": "inline-block",
         "verticalAlign": "top",
+        "height": "60%",
     },
 )
 
@@ -322,34 +349,74 @@ table_container = html.Div(
 table_and_link_container = html.Div(
     id="table-and-link-container",
     children=[
-        html.Div(
-            [
-                html.H2(
-                    "Filtered Data", style={"textAlign": "center", "color": "white"}
-                ),
-            ],
-            style={"backgroundColor": "#009DD9"},
-        ),
         table_container,
     ],
-    style={"display": "none", "position": "relative", "width": "100%"},
+    style={
+        "display": "block",
+        "position": "relative",
+        "width": "100%",
+        "height": "60%",
+    },
 )
 
+
 # Container that includes both the toggle button and the table and link container
-table_and_button_container = html.Div(
-    [toggle_table_button, table_and_link_container],
-    style={
-        "position": "relative",
-        "width": "80%",
-        "margin": "auto",
-    },  # Center the container
+# table_and_button_container = html.Div(
+#     [toggle_table_button, table_and_link_container],
+#     style={
+#         "position": "relative",
+#         "width": "80%",
+#         "margin": "auto",
+#         "height":"100px",
+#     },  # Center the container
+# )
+
+accordion = html.Div(
+    dbc.Accordion(
+        [
+            dbc.AccordionItem(
+                title="Map",
+                children=[map_container],
+                style={"height": "100%", "width": "100%"},
+                item_id="item-1",
+            ),
+            dbc.AccordionItem(
+                title="Filtered Data",
+                children=[table_and_link_container],
+                style={"height": "60%", "width": "100%"},
+                item_id="item-2",
+            ),
+        ],
+        always_open=True,
+        id="accordion-always-open",
+        active_item=[
+            "item-1",
+            "item-2",
+        ],  # Set the IDs of the item you want to be open by default
+        # Adjust the style here to ensure the accordion fills its container
+        style={"height": "100%", "width": "100%"},
+    ),
+    # Adjust the style here to make sure the div containing the accordion also fills its container
+    style={"height": "100%", "width": "100%"},
 )
+
 
 layout_container = html.Div(
     style={
         "display": "flex",
         "flexDirection": "row",
-        # 'height': '100%'  # Ensure it fills the vertical space
+        "height": "100%",  # Ensure it fills the vertical space
     },
-    children=[sidebar, map_container],
+    children=[
+        sidebar,  # assuming sidebar has a fixed width or a flex-basis set
+        html.Div(
+            accordion,
+            style={
+                "flexGrow": 1,
+                "flexShrink": 1,
+                "flexBasis": "auto",
+                "height": "100%",
+            },  # Allow accordion to grow and fill the space
+        ),
+    ],
 )
