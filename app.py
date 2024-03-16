@@ -556,50 +556,62 @@ def tab_2_content():
         ],
     )
 
+    satellite_data__tab_accordion = html.Div(
+        dbc.Accordion(
+            [
+                dbc.AccordionItem(
+                    title="Map",
+                    children=[
+                        html.Div(  # Container for the map
+                            id="map-container",
+                            children=[
+                                html.Iframe(
+                                    id="map-iframe",
+                                    width="100%",
+                                    height="500px",  # Adjust height as needed
+                                    style={
+                                        "border": "2px solid lightgrey",
+                                        "border-radius": "8px",
+                                        "zIndex": 0,
+                                        "height": "700px",
+                                    },
+                                ),
+                            ],
+                            style={
+                                "width": "100%",
+                                "height": "480px",
+                                "position": "relative",
+                                "flex": "1",
+                            },
+                        ),
+                    ],
+                    item_id="item-1",
+                    style={"height": "100%", "width": "100%"},
+                ),
+            ],
+            always_open=True,
+            id="accordion-always-open",
+            active_item="item-1",  # Set the ID of the item you want to be open by default
+            style={"height": "100%", "width": "100%"},
+        ),
+    )
+
     layout = html.Div(
         style={
             "display": "flex",
             "flexDirection": "row",
-            # "height": "100vh",  # This will make it fill the full height of the viewport
+            "height": "100%",  # Ensure it fills the vertical space
         },
         children=[
             sidebar,  # Assuming sidebar is a defined component
-            dbc.Accordion(
-                [
-                    dbc.AccordionItem(
-                        title="Map",
-                        children=[
-                            html.Div(  # Container for the map
-                                id="map-container",
-                                children=[
-                                    html.Iframe(
-                                        id="map-iframe",
-                                        srcDoc=None,
-                                        width="100%",
-                                        height="550px",  # Adjust height as needed
-                                        style={
-                                            "border": "2px solid lightgrey",
-                                            "border-radius": "8px",
-                                            "zIndex": 0,
-                                            "height": "700px",
-                                        },
-                                    ),
-                                ],
-                                style={
-                                    "flex": "1",
-                                    "display": "flex",
-                                    "height": "100%",
-                                },
-                            ),
-                        ],
-                        item_id="item-1",
-                        style={"height": "100%", "width": "100%"},
-                    ),
-                ],
-                always_open=True,
-                id="accordion-always-open",
-                active_item="item-1",  # Set the ID of the item you want to be open by default
-                style={"flex": "1", "height": "100%", "minWidth": "300px"},
+            html.Div(
+                satellite_data__tab_accordion,
+                style={
+                    "flexGrow": 1,
+                    "flexShrink": 1,
+                    "flexBasis": "auto",
+                    "height": "100%",
+                },  # Allow accordion to grow and fill the space
             ),
         ],
     )
@@ -885,62 +897,86 @@ def tab_3_content():
 
     return html.Div(
         [
-            html.Div([
-            html.Label("Selected Crop", style=label_style),
-            dcc.Dropdown(
-                id="selected-crop-dropdown",
-                placeholder="Select Crop",
-                disabled=True,
-                style=dropdown_style,
-            ),
-            html.Button("Load CSV", id="load-csv-button", className = "button-predicted"),
             html.Div(
-                id="csv-data-table-container",
-                style={"width": "100%", "overflowX": "auto"},
-            ),
-            ], style=box_style),
-            html.Div([
-            html.Label("Select Features", style=label_style),
-            dcc.Dropdown(
-                id="features-dropdown",
-                multi=True,
-                placeholder="Select Features",
-                style=dropdown_style,
-            ),
-            html.Div(
-                id="filtered-features-table-container",
-                style={"width": "100%", "overflowX": "auto"},
-            ),  
-            html.Button("Preprocess Data", id="preprocess-button", className = "button-predicted"),
-            ], style=box_style), # Container for the second data table
-            html.Div([
-            html.Label("Model Selection", style=label_style),
-            dcc.Dropdown(
-                id="model-selection-dropdown",
-                options=[
-                    {"label": "Random Forest Regressor", "value": "RFR"},
-                    {"label": "Linear Regression", "value": "LR"},
-                    {"label": "Gradient Boosting Regressor", "value": "GBR"},
-                    {"label": "Ridge Regression", "value": "Ridge"},
-                    {"label": "Support Vector Regressor", "value": "SVR"},
-                    {"label": "Lasso Regression", "value": "Lasso"},
+                [
+                    html.Label("Selected Crop", style=label_style),
+                    dcc.Dropdown(
+                        id="selected-crop-dropdown",
+                        placeholder="Select Crop",
+                        disabled=True,
+                        style=dropdown_style,
+                    ),
+                    html.Button(
+                        "Load CSV", id="load-csv-button", className="button-predicted"
+                    ),
+                    html.Div(
+                        id="csv-data-table-container",
+                        style={"width": "100%", "overflowX": "auto"},
+                    ),
                 ],
-                value="RFR",
-                style=dropdown_style,
+                style=box_style,
             ),
-            html.Button("Fit Model", id="fit-model-button", className = "button-predicted"),
             html.Div(
-                id="model-metrics-output",
-                children="Model fitting results will appear here",
-                style={"whiteSpace": "pre-line", "marginTop": "0px"},
-            ),], style=box_style),
-            html.Div([
-            html.Button("Predict", id="predict-button", className = "button-predicted"),
+                [
+                    html.Label("Select Features", style=label_style),
+                    dcc.Dropdown(
+                        id="features-dropdown",
+                        multi=True,
+                        placeholder="Select Features",
+                        style=dropdown_style,
+                    ),
+                    html.Div(
+                        id="filtered-features-table-container",
+                        style={"width": "100%", "overflowX": "auto"},
+                    ),
+                    html.Button(
+                        "Preprocess Data",
+                        id="preprocess-button",
+                        className="button-predicted",
+                    ),
+                ],
+                style=box_style,
+            ),  # Container for the second data table
             html.Div(
-                id="prediction-metrics-output",
-                children="Prediction results will appear here",
-                style={"whiteSpace": "pre-line", "marginTop": "20px"},
-            ),], style=box_style),
+                [
+                    html.Label("Model Selection", style=label_style),
+                    dcc.Dropdown(
+                        id="model-selection-dropdown",
+                        options=[
+                            {"label": "Random Forest Regressor", "value": "RFR"},
+                            {"label": "Linear Regression", "value": "LR"},
+                            {"label": "Gradient Boosting Regressor", "value": "GBR"},
+                            {"label": "Ridge Regression", "value": "Ridge"},
+                            {"label": "Support Vector Regressor", "value": "SVR"},
+                            {"label": "Lasso Regression", "value": "Lasso"},
+                        ],
+                        value="RFR",
+                        style=dropdown_style,
+                    ),
+                    html.Button(
+                        "Fit Model", id="fit-model-button", className="button-predicted"
+                    ),
+                    html.Div(
+                        id="model-metrics-output",
+                        children="Model fitting results will appear here",
+                        style={"whiteSpace": "pre-line", "marginTop": "0px"},
+                    ),
+                ],
+                style=box_style,
+            ),
+            html.Div(
+                [
+                    html.Button(
+                        "Predict", id="predict-button", className="button-predicted"
+                    ),
+                    html.Div(
+                        id="prediction-metrics-output",
+                        children="Prediction results will appear here",
+                        style={"whiteSpace": "pre-line", "marginTop": "20px"},
+                    ),
+                ],
+                style=box_style,
+            ),
         ],
         style=content_style,
     )
@@ -1275,14 +1311,17 @@ def predict_and_evaluate(n_clicks, test_data_json, selected_model):
         print(metrics_message)
 
         return metrics_message
-    return html.Div("No predictions made yet.",style={
+    return html.Div(
+        "No predictions made yet.",
+        style={
             "position": "relative",
             "height": "100%",
             "border": "2px solid #ddd",
             "borderRadius": "15px",
             "padding": "20px",
             "boxShadow": "2px 2px 10px #aaa",
-        },)
+        },
+    )
 
 
 # ----------------------------------------------------- #
