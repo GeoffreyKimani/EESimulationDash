@@ -43,7 +43,10 @@ from yield_tab import create_rwanda_map, aggregate_data, color_map
 app = Dash(
     __name__,
     suppress_callback_exceptions=True,
-    external_stylesheets=[dbc.themes.BOOTSTRAP],
+    external_stylesheets=[
+        dbc.themes.BOOTSTRAP,
+        "https://use.fontawesome.com/releases/v5.8.1/css/all.css",
+    ],
 )
 
 app.layout = html.Div(
@@ -204,6 +207,20 @@ def update_inputs_and_display_csv(crop, selected_districts, selected_years, crop
         data=df_filtered.to_dict("records"),
         columns=[{"name": i, "id": i} for i in df_filtered.columns],
         style_table={"overflowX": "auto"},
+        style_cell={  # General style for each cell
+            "minWidth": "150px",
+            "width": "150px",
+            "maxWidth": "150px",
+            "overflow": "hidden",
+            "textOverflow": "ellipsis",
+            "textAlign": "center",
+        },
+        style_header={  # Style for header cells
+            "backgroundColor": "white",
+            "fontWeight": "bold",
+            "textAlign": "center",
+        },
+        style_data={"textAlign": "center"},  # Style for data cells
         page_size=10,  # Adjust as per your requirement
     )
 
@@ -741,40 +758,68 @@ def toggle_indices_content(n_clicks, indices, year, satellite, district):
 #                   TAB 3 CONTENT                       #
 # ----------------------------------------------------- #
 def tab_3_content():
+    content_style = {
+        "width": "60%",
+        "margin": "30px auto",
+        "padding": "2rem",
+        "borderRadius": "8px",
+        "border": "1px solid #ccc",
+        "boxShadow": "0 4px 8px rgba(0,0,0,0.1)",
+    }
+
+    button_style = {
+        "margin": "10px",
+        "lineHeight": "60px",
+        "borderRadius": "8px",
+        "border": "none",
+        "color": "white",
+        "background-color": "#007BFF",
+        "padding": "0 20px",
+        "fontSize": "1rem",
+        "fontWeight": "400",
+    }
+
+    dropdown_style = {
+        "marginBottom": "20px",
+        "borderRadius": "8px",
+        "border": "1px solid #ccc",
+    }
+
+    label_style = {
+        "display": "block",
+        "marginBottom": "5px",
+        "marginTop": "20px",
+        "fontSize": "1.2rem",
+        "fontWeight": "500",
+    }
+
     return html.Div(
         [
-            html.Div(
-                [
-                    dcc.Dropdown(
-                        id="selected-crop-dropdown",
-                        placeholder="Selected Crop",
-                        disabled=True,
-                    ),
-                    html.Button(
-                        "Load CSV",
-                        id="load-csv-button",
-                        className="button-primary-hover-sm",
-                    ),
-                ]
+            html.Label("Selected Crop", style=label_style),
+            dcc.Dropdown(
+                id="selected-crop-dropdown",
+                placeholder="Select Crop",
+                disabled=True,
+                style=dropdown_style,
             ),
-            html.Div(id="csv-data-table-container"),
+            html.Button("Load CSV", id="load-csv-button", style=button_style),
             html.Div(
-                [
-                    dcc.Dropdown(
-                        id="features-dropdown",
-                        multi=True,
-                        placeholder="Select Features",
-                    ),
-                    html.Div(
-                        id="filtered-features-table-container"
-                    ),  # Container for the second data table
-                    html.Button(
-                        "Preprocess Data",
-                        id="preprocess-button",
-                        className="button-primary-hover-lg",
-                    ),
-                ]
+                id="csv-data-table-container",
+                style={"width": "100%", "overflowX": "auto"},
             ),
+            html.Label("Select Features", style=label_style),
+            dcc.Dropdown(
+                id="features-dropdown",
+                multi=True,
+                placeholder="Select Features",
+                style=dropdown_style,
+            ),
+            html.Div(
+                id="filtered-features-table-container",
+                style={"width": "100%", "overflowX": "auto"},
+            ),  # Container for the second data table
+            html.Button("Preprocess Data", id="preprocess-button", style=button_style),
+            html.Label("Model Selection", style=label_style),
             dcc.Dropdown(
                 id="model-selection-dropdown",
                 options=[
@@ -785,41 +830,23 @@ def tab_3_content():
                     {"label": "Support Vector Regressor", "value": "SVR"},
                     {"label": "Lasso Regression", "value": "Lasso"},
                 ],
-                value="RFR",  # Default value
+                value="RFR",
+                style=dropdown_style,
             ),
+            html.Button("Fit Model", id="fit-model-button", style=button_style),
             html.Div(
-                [
-                    html.Button(
-                        "Fit Model",
-                        id="fit-model-button",
-                        className="button-primary-hover-sm",
-                    ),
-                    html.Div(
-                        id="model-metrics-output",
-                        children="Is model fit?",
-                        style={"whiteSpace": "pre-line"},
-                    ),
-                ]
+                id="model-metrics-output",
+                children="Model fitting results will appear here",
+                style={"whiteSpace": "pre-line", "marginTop": "20px"},
             ),
-            html.Button(
-                "Predict",
-                id="predict-button",
-                className="button-primary-hover-sm",
-            ),
+            html.Button("Predict", id="predict-button", style=button_style),
             html.Div(
                 id="prediction-metrics-output",
-                children="Is model fit?",
-                style={"whiteSpace": "pre-line"},
+                children="Prediction results will appear here",
+                style={"whiteSpace": "pre-line", "marginTop": "20px"},
             ),
         ],
-        style={
-            "width": "50%",
-            "margin": "0 auto",
-            "border": "2px solid #ddd",
-            "borderRadius": "15px",
-            "padding": "20px",
-            "boxShadow": "2px 2px 10px #aaa",
-        },
+        style=content_style,
     )
 
 
@@ -891,6 +918,20 @@ def load_and_display_csv(n_clicks, value, gdf_data):
             df.to_dict("records"),
             [{"name": i, "id": i} for i in df.columns],
             style_table={"overflowX": "auto"},
+            style_cell={  # General style for each cell
+                "minWidth": "150px",
+                "width": "150px",
+                "maxWidth": "150px",
+                "overflow": "hidden",
+                "textOverflow": "ellipsis",
+                "textAlign": "center",
+            },
+            style_header={  # Style for header cells
+                "backgroundColor": "white",
+                "fontWeight": "bold",
+                "textAlign": "center",
+            },
+            style_data={"textAlign": "center"},  # Style for data cells
             page_size=10,
         )
 
@@ -963,6 +1004,20 @@ def display_filtered_features_table(filtered_df_json):
             data=filtered_df.to_dict("records"),
             columns=[{"name": i, "id": i} for i in filtered_df.columns],
             style_table={"overflowX": "auto"},
+            style_cell={  # General style for each cell
+                "minWidth": "80px",
+                "width": "80px",
+                "maxWidth": "80px",
+                "overflow": "hidden",
+                "textOverflow": "ellipsis",
+                "textAlign": "center",
+            },
+            style_header={  # Style for header cells
+                "backgroundColor": "white",
+                "fontWeight": "bold",
+                "textAlign": "center",
+            },
+            style_data={"textAlign": "center"},  # Style for data cells
             page_size=10,  # Adjust as needed
         )
 
@@ -1133,7 +1188,7 @@ def predict_and_evaluate(n_clicks, test_data_json, selected_model):
 
 from components.yield_tab_components import (
     layout_container,
-    table_and_button_container,
+    table_and_link_container,
     SIDEBAR_EXPANDED_STYLE,
     SIDEBAR_COLLAPSED_STYLE,
     SIDEBAR_HEADER_COLLAPSED_STYLE,
@@ -1147,7 +1202,7 @@ def tab_yield_content():
         [
             dcc.Store(id="aggregated-data-store"),
             layout_container,
-            table_and_button_container,
+            # table_and_button_container,
         ],
         style={
             "position": "relative",
@@ -1164,6 +1219,7 @@ def tab_yield_content():
     [
         Output("sidebar", "style"),
         Output("sidebar-header", "style"),
+        Output('toggle-sidebar-button', 'children'),  # Update the icon of the toggle button
         Output("controls-container", "style"),
     ],
     [Input("toggle-sidebar-button", "n_clicks")],
@@ -1175,6 +1231,7 @@ def toggle_sidebar(n_clicks, sidebar_style):
         return (
             SIDEBAR_COLLAPSED_STYLE,
             SIDEBAR_HEADER_COLLAPSED_STYLE,
+            html.I(className="fa fa-chevron-right"),  # Change icon to right arrow
             {"display": "none"},
         )
     else:
@@ -1182,6 +1239,7 @@ def toggle_sidebar(n_clicks, sidebar_style):
         return (
             SIDEBAR_EXPANDED_STYLE,
             SIDEBAR_HEADER_EXPANDED_STYLE,
+            html.I(className="fa fa-chevron-left"),  # Change icon to left arrow
             {"display": "block"},
         )
 
