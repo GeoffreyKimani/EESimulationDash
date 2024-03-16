@@ -88,5 +88,10 @@
   border: 1px solid rgba(0, 116, 217, 0.6);
 }
 
+.DateRangePicker_picker {
+  z-index: 9999 !important;
+  top: 100px !important;
+  left: -40px !important;
+}
 
 /* Sidebar */

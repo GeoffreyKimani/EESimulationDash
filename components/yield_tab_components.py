@@ -370,7 +370,7 @@ table_and_link_container = html.Div(
 #     },  # Center the container
 # )
 
-accordion = html.Div(
+yield_tab_accordion = html.Div(
     dbc.Accordion(
         [
             dbc.AccordionItem(
@@ -409,7 +409,7 @@ layout_container = html.Div(
     children=[
         sidebar,  # assuming sidebar has a fixed width or a flex-basis set
         html.Div(
-            accordion,
+            yield_tab_accordion,
             style={
                 "flexGrow": 1,
                 "flexShrink": 1,

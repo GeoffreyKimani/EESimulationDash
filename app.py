@@ -346,183 +346,276 @@ def update_image(gdf_data, n_clicks):
 # ----------------------------------------------------- #
 #                   TAB 2 CONTENT                       #
 # ----------------------------------------------------- #
-
-
-def tab_2_content():
-    return dbc.Container(
+# Define the sidebar layout with controls
+def create_sidebar_controls():
+    return html.Div(
         [
-            dbc.Row(
+            # Container for the Satellite name with label
+            html.Div(
                 [
-                    dbc.Col(
-                        html.Div(
-                            [
-                                html.Label("Satellite name:"),
-                                dcc.Dropdown(
-                                    id="dropdown-Satellite",
-                                    options=[
-                                        {"label": sat_name, "value": sat}
-                                        for sat_name, sat in satellite_dict.items()
-                                    ],
-                                    value=None,
-                                    searchable=True,
-                                    placeholder="Select Satellite...",
-                                ),
-                            ]
-                        ),
-                        width=12,
-                        md=4,
+                    html.Label(
+                        "Satellite name:",
+                        style={"display": "inline-block", "margin-right": "10px"},
                     ),
-                    dbc.Col(
-                        html.Div(
-                            [
-                                html.Label("District name:"),
-                                dcc.Dropdown(
-                                    id="dropdown-district",
-                                    options=[
-                                        {"label": name, "value": name}
-                                        for name in district_names
-                                    ],
-                                    value=None,
-                                    searchable=True,
-                                    placeholder="Select or type your district...",
-                                ),
-                            ]
-                        ),
-                        width=12,
-                        md=4,
-                    ),
-                    dbc.Col(
-                        html.Div(
-                            [
-                                html.Label("Time of Interest: "),
-                                dcc.DatePickerRange(
-                                    id="time-of-interest",
-                                    min_date_allowed=date(2000, 1, 1),
-                                    max_date_allowed=date.today(),
-                                    initial_visible_month=date.today(),
-                                    end_date=date.today(),
-                                ),
-                            ]
-                        ),
-                        width=12,
-                        md=4,
+                    dcc.Dropdown(
+                        id="dropdown-Satellite",
+                        options=[
+                            {"label": name, "value": value}
+                            for name, value in satellite_dict.items()
+                        ],
+                        value=None,
+                        searchable=True,
+                        placeholder="Select Satellite...",
+                        # labelStyle={"display": "block", "text-align": "justify"},
+                        style={"width": "100%", "marginBottom": "20px"},
                     ),
                 ],
-                justify="start",
+                style={"margin-bottom": "10px", "padding-left": "20px"},
             ),
-            dbc.Row(
+            # Container for the District name with label
+            html.Div(
                 [
-                    dbc.Col(
-                        html.Div(
-                            [
-                                dcc.Checklist(
-                                    id="cloud-mask-checkbox",
-                                    options=[
-                                        {"label": "Mask Clouds", "value": "cloud_mask"}
-                                    ],
-                                    value=["cloud_mask"],
-                                    labelStyle={"display": "block"},
-                                ),
-                                dcc.Checklist(
-                                    id="filter-checkbox",
-                                    options=[
-                                        {"label": "Use MA Filter", "value": "filters"}
-                                    ],
-                                    value=[],
-                                    labelStyle={"display": "block"},
-                                ),
-                            ]
-                        ),
-                        width=12,
-                        md=4,
+                    html.Label(
+                        "District name:",
+                        style={"display": "inline-block", "margin-right": "10px"},
                     ),
-                    dbc.Col(
-                        html.Div(
-                            [
-                                html.Label("Spectral indices"),
-                                dcc.Checklist(
-                                    id="index-checkboxes",
-                                    options=[
-                                        {"label": "NDVI", "value": "NDVI"},
-                                        {"label": "EVI", "value": "EVI"},
-                                        {"label": "SAVI", "value": "SAVI"},
-                                        # Add more indices as needed
-                                    ],
-                                    value=[],
-                                    labelStyle={
-                                        "display": "block",
-                                        "padding-right": "20px",
-                                        "position": "relative",
-                                        "left": "150px",
-                                    },
-                                    style={
-                                        "textAlign": "justify",
-                                    },
-                                ),
-                            ],
-                        ),
-                        width=12,
-                        md=4,
-                    ),
-                    dbc.Col(
-                        html.Div(
-                            [
-                                html.Button(
-                                    "Submit",
-                                    id="submit-val",
-                                    className="mt-4 button-primary-hover-sm",
-                                    n_clicks=0,
-                                ),
-                            ]
-                        ),
-                        width=12,
-                        md=4,
+                    dcc.Dropdown(
+                        id="dropdown-district",
+                        options=[
+                            {"label": name, "value": name} for name in district_names
+                        ],
+                        value=None,
+                        searchable=True,
+                        placeholder="Select or type your district...",
+                        style={"width": "100%", "marginBottom": "20px"},
                     ),
                 ],
-                justify="start",
+                style={"margin-bottom": "10px", "padding-left": "20px"},
             ),
-            dbc.Row(
+            # Container for the Time of Interest with label
+            html.Div(
                 [
-                    dbc.Col(
-                        html.Div(
-                            [
-                                dcc.Input(
-                                    id="year-input",
-                                    type="number",
-                                    placeholder="Enter year",
-                                    min=date(2000, 1, 1).year,
-                                    max=date.today().year,
-                                    className="mt-4",  # Optional: if you want to add some top margin
-                                ),
-                                html.Button(
-                                    "View Indices",
-                                    id="toggle-indices-btn",
-                                    className="mt-2 button-primary-hover-sm",
-                                    n_clicks=0,
-                                ),
-                            ]
-                        ),
-                        width=12,
-                        md=4,
+                    html.Label(
+                        "Time of Interest:",
+                        style={"display": "block", "margin-bottom": "5px"},
+                    ),
+                    dcc.DatePickerRange(
+                        id="time-of-interest",
+                        min_date_allowed=date(2000, 1, 1),
+                        max_date_allowed=date.today(),
+                        initial_visible_month=date.today(),
+                        end_date=date.today(),
+                        style={"width": "100%"},
                     ),
                 ],
-                justify="start",
+                style={"margin-bottom": "20px"},
             ),
-            dbc.Row(
-                dbc.Col(
-                    html.Iframe(
-                        id="map-iframe",
-                        srcDoc=None,
-                        style={"width": "100%", "height": "600px"},
+            # Container for the cloud-mask-checkbox
+            html.Div(
+                [
+                    dcc.Checklist(
+                        id="cloud-mask-checkbox",
+                        options=[{"label": "Mask Clouds", "value": "cloud_mask"}],
+                        value=["cloud_mask"],
+                        labelStyle={"display": "block", "text-align": "justify"},
+                        style={
+                            "border": "1px solid #ddd",
+                            "padding": "10px",
+                            "border-radius": "5px",
+                            "padding-left": "20px",
+                        },  # Adjust the padding-left as needed
                     ),
-                    width=12,
-                )
+                ],
+                style={"margin-bottom": "10px", "padding-left": "20px"},
             ),
-            html.Div(id="indices-content", children=[]),
-            html.Div(id="output-info"),
+            # Container for the filter-checkbox
+            html.Div(
+                [
+                    dcc.Checklist(
+                        id="filter-checkbox",
+                        options=[{"label": "Use MA Filter", "value": "filters"}],
+                        value=[],
+                        labelStyle={"display": "block", "text-align": "justify"},
+                        style={
+                            "border": "1px solid #ddd",
+                            "padding": "10px",
+                            "border-radius": "5px",
+                            "padding-left": "20px",
+                        },  # Adjust the padding-left as needed
+                    ),
+                ],
+                style={"margin-bottom": "10px", "padding-left": "20px"},
+            ),
+            # Container for the Spectral indices with label
+            html.Div(
+                [
+                    html.Label(
+                        "Spectral indices",
+                        style={
+                            "display": "inline-block",
+                        },
+                    ),
+                    dcc.Checklist(
+                        id="index-checkboxes",
+                        options=[
+                            {"label": "NDVI", "value": "NDVI"},
+                            {"label": "EVI", "value": "EVI"},
+                            {"label": "SAVI", "value": "SAVI"},
+                            # Add more indices as needed
+                        ],
+                        value=[],
+                        labelStyle={"display": "block", "text-align": "justify"},
+                        style={
+                            "border": "1px solid #ddd",
+                            "padding": "10px",
+                            "border-radius": "5px",
+                            "padding-left": "20px",
+                        },  # Adjust the padding-left as needed
+                    ),
+                ],
+                style={"margin-bottom": "10px", "padding-left": "20px"},
+            ),
+            # Container for the year-input with label
+            html.Div(
+                [
+                    dcc.Input(
+                        id="year-input",
+                        type="number",
+                        placeholder="Enter year",
+                        min=date(2000, 1, 1).year,
+                        max=date.today().year,
+                        style={"width": "100%", "marginBottom": "20px"},
+                    ),
+                ],
+                style={"margin-bottom": "5px"},
+            ),
+            # Container for the buttons aligned with other components
+            html.Button(
+                "View Indices",
+                id="toggle-indices-btn",
+                n_clicks=0,
+                className="btn btn-outline-primary btn-lg",
+                style={"width": "100%", "marginBottom": "10px"},
+            ),
+            html.Button(
+                "Submit",
+                id="submit-val",
+                n_clicks=0,
+                className="btn btn-outline-success btn-lg",
+                style={
+                    "width": "100%",
+                    "marginTop": "10px",
+                },  # Added marginTop for spacing
+            ),
         ],
-        fluid=True,
-        style={"max-width": "1200px", "margin": "0 auto"},
+        style={
+            "padding": "20px",
+            "z-index": "1000",  # Apply z-index here for the entire sidebar
+            "position": "relative",  # Required for z-index to work
+        },
+    )
+
+
+# The main layout function of your app tab content
+def tab_2_content():
+    sidebar_controls = create_sidebar_controls()
+
+    # Now use these controls in your sidebar layout
+    sidebar = html.Div(
+        id="sidebar",
+        style=SIDEBAR_EXPANDED_STYLE,
+        children=[
+            html.Button(
+                html.I(className="fa fa-chevron-left"),
+                # children=[],  # No content needed, we'll use CSS for the arrow icon
+                id="toggle-sidebar-button",
+                className="toggle-button",
+                n_clicks=0,
+                style={
+                    "position": "absolute",
+                    "top": 0,
+                    "right": "0",  # Adjusted from -30 to 0
+                    "width": "30px",
+                    "height": "30px",  # Adjust size as needed
+                    "backgroundColor": "transparent",  # Make background transparent
+                    "border": "none",  # Remove border
+                },
+            ),
+            html.Div(
+                id="sidebar-header",
+                children="Map Settings",
+                style=SIDEBAR_HEADER_EXPANDED_STYLE,
+            ),
+            html.Div(
+                id="controls-container",
+                children=[sidebar_controls],
+                style={
+                    "display": "block"
+                },  # Use 'none' to hide the controls when sidebar is collapsed
+            ),
+        ],
+    )
+
+    layout = html.Div(
+        style={
+            "display": "flex",
+            "flexDirection": "row",
+            # "height": "100vh",  # This will make it fill the full height of the viewport
+        },
+        children=[
+            sidebar,  # Assuming sidebar is a defined component
+            dbc.Accordion(
+                [
+                    dbc.AccordionItem(
+                        title="Map",
+                        children=[
+                            html.Div(  # Container for the map
+                                id="map-container",
+                                children=[
+                                    html.Iframe(
+                                        id="map-iframe",
+                                        srcDoc=None,
+                                        width="100%",
+                                        height="550px",  # Adjust height as needed
+                                        style={
+                                            "border": "2px solid lightgrey",
+                                            "border-radius": "8px",
+                                            "zIndex": 0,
+                                            "height": "700px",
+                                        },
+                                    ),
+                                ],
+                                style={
+                                    "flex": "1",
+                                    "display": "flex",
+                                    "height": "100%",
+                                },
+                            ),
+                        ],
+                        item_id="item-1",
+                        style={"height": "100%", "width": "100%"},
+                    ),
+                ],
+                always_open=True,
+                id="accordion-always-open",
+                active_item="item-1",  # Set the ID of the item you want to be open by default
+                style={"flex": "1", "height": "100%", "minWidth": "300px"},
+            ),
+        ],
+    )
+
+    return html.Div(
+        [
+            layout,
+        ],
+        style={
+            "position": "relative",
+            "height": "100%",
+            "border": "2px solid #ddd",
+            "borderRadius": "15px",
+            "padding": "10px",
+            "boxShadow": "2px 2px 10px #aaa",
+        },
     )
 
 
@@ -1219,7 +1312,9 @@ def tab_yield_content():
     [
         Output("sidebar", "style"),
         Output("sidebar-header", "style"),
-        Output('toggle-sidebar-button', 'children'),  # Update the icon of the toggle button
+        Output(
+            "toggle-sidebar-button", "children"
+        ),  # Update the icon of the toggle button
         Output("controls-container", "style"),
     ],
     [Input("toggle-sidebar-button", "n_clicks")],
