@@ -346,183 +346,288 @@ def update_image(gdf_data, n_clicks):
 # ----------------------------------------------------- #
 #                   TAB 2 CONTENT                       #
 # ----------------------------------------------------- #
-
-
-def tab_2_content():
-    return dbc.Container(
+# Define the sidebar layout with controls
+def create_sidebar_controls():
+    return html.Div(
         [
-            dbc.Row(
+            # Container for the Satellite name with label
+            html.Div(
                 [
-                    dbc.Col(
-                        html.Div(
-                            [
-                                html.Label("Satellite name:"),
-                                dcc.Dropdown(
-                                    id="dropdown-Satellite",
-                                    options=[
-                                        {"label": sat_name, "value": sat}
-                                        for sat_name, sat in satellite_dict.items()
-                                    ],
-                                    value=None,
-                                    searchable=True,
-                                    placeholder="Select Satellite...",
-                                ),
-                            ]
-                        ),
-                        width=12,
-                        md=4,
+                    html.Label(
+                        "Satellite name:",
+                        style={"display": "inline-block", "margin-right": "10px"},
                     ),
-                    dbc.Col(
-                        html.Div(
-                            [
-                                html.Label("District name:"),
-                                dcc.Dropdown(
-                                    id="dropdown-district",
-                                    options=[
-                                        {"label": name, "value": name}
-                                        for name in district_names
-                                    ],
-                                    value=None,
-                                    searchable=True,
-                                    placeholder="Select or type your district...",
-                                ),
-                            ]
-                        ),
-                        width=12,
-                        md=4,
-                    ),
-                    dbc.Col(
-                        html.Div(
-                            [
-                                html.Label("Time of Interest: "),
-                                dcc.DatePickerRange(
-                                    id="time-of-interest",
-                                    min_date_allowed=date(2000, 1, 1),
-                                    max_date_allowed=date.today(),
-                                    initial_visible_month=date.today(),
-                                    end_date=date.today(),
-                                ),
-                            ]
-                        ),
-                        width=12,
-                        md=4,
+                    dcc.Dropdown(
+                        id="dropdown-Satellite",
+                        options=[
+                            {"label": name, "value": value}
+                            for name, value in satellite_dict.items()
+                        ],
+                        value=None,
+                        searchable=True,
+                        placeholder="Select Satellite...",
+                        # labelStyle={"display": "block", "text-align": "justify"},
+                        style={"width": "100%", "marginBottom": "20px"},
                     ),
                 ],
-                justify="start",
+                style={"margin-bottom": "10px", "padding-left": "20px"},
             ),
-            dbc.Row(
+            # Container for the District name with label
+            html.Div(
                 [
-                    dbc.Col(
-                        html.Div(
-                            [
-                                dcc.Checklist(
-                                    id="cloud-mask-checkbox",
-                                    options=[
-                                        {"label": "Mask Clouds", "value": "cloud_mask"}
-                                    ],
-                                    value=["cloud_mask"],
-                                    labelStyle={"display": "block"},
-                                ),
-                                dcc.Checklist(
-                                    id="filter-checkbox",
-                                    options=[
-                                        {"label": "Use MA Filter", "value": "filters"}
-                                    ],
-                                    value=[],
-                                    labelStyle={"display": "block"},
-                                ),
-                            ]
-                        ),
-                        width=12,
-                        md=4,
+                    html.Label(
+                        "District name:",
+                        style={"display": "inline-block", "margin-right": "10px"},
                     ),
-                    dbc.Col(
-                        html.Div(
-                            [
-                                html.Label("Spectral indices"),
-                                dcc.Checklist(
-                                    id="index-checkboxes",
-                                    options=[
-                                        {"label": "NDVI", "value": "NDVI"},
-                                        {"label": "EVI", "value": "EVI"},
-                                        {"label": "SAVI", "value": "SAVI"},
-                                        # Add more indices as needed
-                                    ],
-                                    value=[],
-                                    labelStyle={
-                                        "display": "block",
-                                        "padding-right": "20px",
-                                        "position": "relative",
-                                        "left": "150px",
-                                    },
+                    dcc.Dropdown(
+                        id="dropdown-district",
+                        options=[
+                            {"label": name, "value": name} for name in district_names
+                        ],
+                        value=None,
+                        searchable=True,
+                        placeholder="Select or type your district...",
+                        style={"width": "100%", "marginBottom": "20px"},
+                    ),
+                ],
+                style={"margin-bottom": "10px", "padding-left": "20px"},
+            ),
+            # Container for the Time of Interest with label
+            html.Div(
+                [
+                    html.Label(
+                        "Time of Interest:",
+                        style={"display": "block", "margin-bottom": "5px"},
+                    ),
+                    dcc.DatePickerRange(
+                        id="time-of-interest",
+                        min_date_allowed=date(2000, 1, 1),
+                        max_date_allowed=date.today(),
+                        initial_visible_month=date.today(),
+                        end_date=date.today(),
+                        style={"width": "100%"},
+                    ),
+                ],
+                style={"margin-bottom": "20px"},
+            ),
+            # Container for the cloud-mask-checkbox
+            html.Div(
+                [
+                    dcc.Checklist(
+                        id="cloud-mask-checkbox",
+                        options=[{"label": "Mask Clouds", "value": "cloud_mask"}],
+                        value=["cloud_mask"],
+                        labelStyle={"display": "block", "text-align": "justify"},
+                        style={
+                            "border": "1px solid #ddd",
+                            "padding": "10px",
+                            "border-radius": "5px",
+                            "padding-left": "20px",
+                        },  # Adjust the padding-left as needed
+                    ),
+                ],
+                style={"margin-bottom": "10px", "padding-left": "20px"},
+            ),
+            # Container for the filter-checkbox
+            html.Div(
+                [
+                    dcc.Checklist(
+                        id="filter-checkbox",
+                        options=[{"label": "Use MA Filter", "value": "filters"}],
+                        value=[],
+                        labelStyle={"display": "block", "text-align": "justify"},
+                        style={
+                            "border": "1px solid #ddd",
+                            "padding": "10px",
+                            "border-radius": "5px",
+                            "padding-left": "20px",
+                        },  # Adjust the padding-left as needed
+                    ),
+                ],
+                style={"margin-bottom": "10px", "padding-left": "20px"},
+            ),
+            # Container for the Spectral indices with label
+            html.Div(
+                [
+                    html.Label(
+                        "Spectral indices",
+                        style={
+                            "display": "inline-block",
+                        },
+                    ),
+                    dcc.Checklist(
+                        id="index-checkboxes",
+                        options=[
+                            {"label": "NDVI", "value": "NDVI"},
+                            {"label": "EVI", "value": "EVI"},
+                            {"label": "SAVI", "value": "SAVI"},
+                            # Add more indices as needed
+                        ],
+                        value=[],
+                        labelStyle={"display": "block", "text-align": "justify"},
+                        style={
+                            "border": "1px solid #ddd",
+                            "padding": "10px",
+                            "border-radius": "5px",
+                            "padding-left": "20px",
+                        },  # Adjust the padding-left as needed
+                    ),
+                ],
+                style={"margin-bottom": "10px", "padding-left": "20px"},
+            ),
+            # Container for the year-input with label
+            html.Div(
+                [
+                    dcc.Input(
+                        id="year-input",
+                        type="number",
+                        placeholder="Enter year",
+                        min=date(2000, 1, 1).year,
+                        max=date.today().year,
+                        style={"width": "100%", "marginBottom": "20px"},
+                    ),
+                ],
+                style={"margin-bottom": "5px"},
+            ),
+            # Container for the buttons aligned with other components
+            html.Button(
+                "View Indices",
+                id="toggle-indices-btn",
+                n_clicks=0,
+                className="btn btn-outline-primary btn-lg",
+                style={"width": "100%", "marginBottom": "10px"},
+            ),
+            html.Button(
+                "Submit",
+                id="submit-val",
+                n_clicks=0,
+                className="btn btn-outline-success btn-lg",
+                style={
+                    "width": "100%",
+                    "marginTop": "10px",
+                },  # Added marginTop for spacing
+            ),
+        ],
+        style={
+            "padding": "20px",
+            "z-index": "1000",  # Apply z-index here for the entire sidebar
+            "position": "relative",  # Required for z-index to work
+        },
+    )
+
+
+# The main layout function of your app tab content
+def tab_2_content():
+    sidebar_controls = create_sidebar_controls()
+
+    # Now use these controls in your sidebar layout
+    sidebar = html.Div(
+        id="sidebar",
+        style=SIDEBAR_EXPANDED_STYLE,
+        children=[
+            html.Button(
+                html.I(className="fa fa-chevron-left"),
+                # children=[],  # No content needed, we'll use CSS for the arrow icon
+                id="toggle-sidebar-button",
+                className="toggle-button",
+                n_clicks=0,
+                style={
+                    "position": "absolute",
+                    "top": 0,
+                    "right": "0",  # Adjusted from -30 to 0
+                    "width": "30px",
+                    "height": "30px",  # Adjust size as needed
+                    "backgroundColor": "transparent",  # Make background transparent
+                    "border": "none",  # Remove border
+                },
+            ),
+            html.Div(
+                id="sidebar-header",
+                children="Map Settings",
+                style=SIDEBAR_HEADER_EXPANDED_STYLE,
+            ),
+            html.Div(
+                id="controls-container",
+                children=[sidebar_controls],
+                style={
+                    "display": "block"
+                },  # Use 'none' to hide the controls when sidebar is collapsed
+            ),
+        ],
+    )
+
+    satellite_data__tab_accordion = html.Div(
+        dbc.Accordion(
+            [
+                dbc.AccordionItem(
+                    title="Map",
+                    children=[
+                        html.Div(  # Container for the map
+                            id="map-container",
+                            children=[
+                                html.Iframe(
+                                    id="map-iframe",
+                                    width="100%",
+                                    height="500px",  # Adjust height as needed
                                     style={
-                                        "textAlign": "justify",
+                                        "border": "2px solid lightgrey",
+                                        "border-radius": "8px",
+                                        "zIndex": 0,
+                                        "height": "700px",
                                     },
                                 ),
                             ],
+                            style={
+                                "width": "100%",
+                                "height": "480px",
+                                "position": "relative",
+                                "flex": "1",
+                            },
                         ),
-                        width=12,
-                        md=4,
-                    ),
-                    dbc.Col(
-                        html.Div(
-                            [
-                                html.Button(
-                                    "Submit",
-                                    id="submit-val",
-                                    className="mt-4 button-primary-hover-sm",
-                                    n_clicks=0,
-                                ),
-                            ]
-                        ),
-                        width=12,
-                        md=4,
-                    ),
-                ],
-                justify="start",
+                    ],
+                    item_id="item-1",
+                    style={"height": "100%", "width": "100%"},
+                ),
+            ],
+            always_open=True,
+            id="accordion-always-open",
+            active_item="item-1",  # Set the ID of the item you want to be open by default
+            style={"height": "100%", "width": "100%"},
+        ),
+    )
+
+    layout = html.Div(
+        style={
+            "display": "flex",
+            "flexDirection": "row",
+            "height": "100%",  # Ensure it fills the vertical space
+        },
+        children=[
+            sidebar,  # Assuming sidebar is a defined component
+            html.Div(
+                satellite_data__tab_accordion,
+                style={
+                    "flexGrow": 1,
+                    "flexShrink": 1,
+                    "flexBasis": "auto",
+                    "height": "100%",
+                },  # Allow accordion to grow and fill the space
             ),
-            dbc.Row(
-                [
-                    dbc.Col(
-                        html.Div(
-                            [
-                                dcc.Input(
-                                    id="year-input",
-                                    type="number",
-                                    placeholder="Enter year",
-                                    min=date(2000, 1, 1).year,
-                                    max=date.today().year,
-                                    className="mt-4",  # Optional: if you want to add some top margin
-                                ),
-                                html.Button(
-                                    "View Indices",
-                                    id="toggle-indices-btn",
-                                    className="mt-2 button-primary-hover-sm",
-                                    n_clicks=0,
-                                ),
-                            ]
-                        ),
-                        width=12,
-                        md=4,
-                    ),
-                ],
-                justify="start",
-            ),
-            dbc.Row(
-                dbc.Col(
-                    html.Iframe(
-                        id="map-iframe",
-                        srcDoc=None,
-                        style={"width": "100%", "height": "600px"},
-                    ),
-                    width=12,
-                )
-            ),
-            html.Div(id="indices-content", children=[]),
-            html.Div(id="output-info"),
         ],
-        fluid=True,
-        style={"max-width": "1200px", "margin": "0 auto"},
+    )
+
+    return html.Div(
+        [
+            layout,
+        ],
+        style={
+            "position": "relative",
+            "height": "100%",
+            "border": "2px solid #ddd",
+            "borderRadius": "15px",
+            "padding": "10px",
+            "boxShadow": "2px 2px 10px #aaa",
+        },
     )
 
 
@@ -767,21 +872,8 @@ def tab_3_content():
         "boxShadow": "0 4px 8px rgba(0,0,0,0.1)",
     }
 
-    button_style = {
-        "margin": "10px",
-        "lineHeight": "60px",
-        "borderRadius": "8px",
-        "border": "none",
-        "color": "white",
-        "background-color": "#007BFF",
-        "padding": "0 20px",
-        "fontSize": "1rem",
-        "fontWeight": "400",
-    }
-
     dropdown_style = {
         "marginBottom": "20px",
-        "borderRadius": "8px",
         "border": "1px solid #ccc",
     }
 
@@ -793,57 +885,97 @@ def tab_3_content():
         "fontWeight": "500",
     }
 
+    box_style = {
+        "position": "relative",
+        "height": "100%",
+        "border": "1px solid #ddd",
+        "borderRadius": "5px",
+        "padding": "20px",
+        "marginTop": "10px",
+        "boxShadow": "2px 2px 10px #aaa",
+    }
+
     return html.Div(
         [
-            html.Label("Selected Crop", style=label_style),
-            dcc.Dropdown(
-                id="selected-crop-dropdown",
-                placeholder="Select Crop",
-                disabled=True,
-                style=dropdown_style,
-            ),
-            html.Button("Load CSV", id="load-csv-button", style=button_style),
             html.Div(
-                id="csv-data-table-container",
-                style={"width": "100%", "overflowX": "auto"},
-            ),
-            html.Label("Select Features", style=label_style),
-            dcc.Dropdown(
-                id="features-dropdown",
-                multi=True,
-                placeholder="Select Features",
-                style=dropdown_style,
-            ),
-            html.Div(
-                id="filtered-features-table-container",
-                style={"width": "100%", "overflowX": "auto"},
-            ),  # Container for the second data table
-            html.Button("Preprocess Data", id="preprocess-button", style=button_style),
-            html.Label("Model Selection", style=label_style),
-            dcc.Dropdown(
-                id="model-selection-dropdown",
-                options=[
-                    {"label": "Random Forest Regressor", "value": "RFR"},
-                    {"label": "Linear Regression", "value": "LR"},
-                    {"label": "Gradient Boosting Regressor", "value": "GBR"},
-                    {"label": "Ridge Regression", "value": "Ridge"},
-                    {"label": "Support Vector Regressor", "value": "SVR"},
-                    {"label": "Lasso Regression", "value": "Lasso"},
+                [
+                    html.Label("Selected Crop", style=label_style),
+                    dcc.Dropdown(
+                        id="selected-crop-dropdown",
+                        placeholder="Select Crop",
+                        disabled=True,
+                        style=dropdown_style,
+                    ),
+                    html.Button(
+                        "Load CSV", id="load-csv-button", className="button-predicted"
+                    ),
+                    html.Div(
+                        id="csv-data-table-container",
+                        style={"width": "100%", "overflowX": "auto"},
+                    ),
                 ],
-                value="RFR",
-                style=dropdown_style,
+                style=box_style,
             ),
-            html.Button("Fit Model", id="fit-model-button", style=button_style),
             html.Div(
-                id="model-metrics-output",
-                children="Model fitting results will appear here",
-                style={"whiteSpace": "pre-line", "marginTop": "20px"},
+                [
+                    html.Label("Select Features", style=label_style),
+                    dcc.Dropdown(
+                        id="features-dropdown",
+                        multi=True,
+                        placeholder="Select Features",
+                        style=dropdown_style,
+                    ),
+                    html.Div(
+                        id="filtered-features-table-container",
+                        style={"width": "100%", "overflowX": "auto"},
+                    ),
+                    html.Button(
+                        "Preprocess Data",
+                        id="preprocess-button",
+                        className="button-predicted",
+                    ),
+                ],
+                style=box_style,
+            ),  # Container for the second data table
+            html.Div(
+                [
+                    html.Label("Model Selection", style=label_style),
+                    dcc.Dropdown(
+                        id="model-selection-dropdown",
+                        options=[
+                            {"label": "Random Forest Regressor", "value": "RFR"},
+                            {"label": "Linear Regression", "value": "LR"},
+                            {"label": "Gradient Boosting Regressor", "value": "GBR"},
+                            {"label": "Ridge Regression", "value": "Ridge"},
+                            {"label": "Support Vector Regressor", "value": "SVR"},
+                            {"label": "Lasso Regression", "value": "Lasso"},
+                        ],
+                        value="RFR",
+                        style=dropdown_style,
+                    ),
+                    html.Button(
+                        "Fit Model", id="fit-model-button", className="button-predicted"
+                    ),
+                    html.Div(
+                        id="model-metrics-output",
+                        children="Model fitting results will appear here",
+                        style={"whiteSpace": "pre-line", "marginTop": "0px"},
+                    ),
+                ],
+                style=box_style,
             ),
-            html.Button("Predict", id="predict-button", style=button_style),
             html.Div(
-                id="prediction-metrics-output",
-                children="Prediction results will appear here",
-                style={"whiteSpace": "pre-line", "marginTop": "20px"},
+                [
+                    html.Button(
+                        "Predict", id="predict-button", className="button-predicted"
+                    ),
+                    html.Div(
+                        id="prediction-metrics-output",
+                        children="Prediction results will appear here",
+                        style={"whiteSpace": "pre-line", "marginTop": "20px"},
+                    ),
+                ],
+                style=box_style,
             ),
         ],
         style=content_style,
@@ -1022,7 +1154,7 @@ def display_filtered_features_table(filtered_df_json):
         )
 
     # If there's no data, return an empty div or a message
-    return html.Div("No data selected.")
+    return html.Div("No data has been selected.")
 
 
 @app.callback(
@@ -1108,7 +1240,7 @@ def fit_model(n_clicks, selected_model, preprocessed_data_json):
 
         print(model_message)
         return model_message
-    return "No model has been fit yet."
+    return html.Div("No model has been fit yet.")
 
 
 @app.callback(
@@ -1179,7 +1311,17 @@ def predict_and_evaluate(n_clicks, test_data_json, selected_model):
         print(metrics_message)
 
         return metrics_message
-    return "No predictions made yet."
+    return html.Div(
+        "No predictions made yet.",
+        style={
+            "position": "relative",
+            "height": "100%",
+            "border": "2px solid #ddd",
+            "borderRadius": "15px",
+            "padding": "20px",
+            "boxShadow": "2px 2px 10px #aaa",
+        },
+    )
 
 
 # ----------------------------------------------------- #
@@ -1219,7 +1361,9 @@ def tab_yield_content():
     [
         Output("sidebar", "style"),
         Output("sidebar-header", "style"),
-        Output('toggle-sidebar-button', 'children'),  # Update the icon of the toggle button
+        Output(
+            "toggle-sidebar-button", "children"
+        ),  # Update the icon of the toggle button
         Output("controls-container", "style"),
     ],
     [Input("toggle-sidebar-button", "n_clicks")],

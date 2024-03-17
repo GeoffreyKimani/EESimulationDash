@@ -82,11 +82,34 @@
     color: white;
   }
 
+/* Btn style for predicted page */ 
+.button-predicted {
+    margin: 10px;
+    line-height: 60px;
+    border-radius: 8px;
+    border: none;
+    color: white;
+    background-color: #007bff;
+    padding: 0 20px;
+    font-size: 1rem;
+    font-weight: 400;
+  }
+
+.button-predicted:hover {
+    background-color: #7e9eed; /* Blue */
+    transform: scale(1.1);
+  }
+
   /* Hover effect for Dash DataTable */
 .dash-spreadsheet-container .dash-spreadsheet-inner tr:hover {
   background-color: rgba(0, 116, 217, 0.1);
   border: 1px solid rgba(0, 116, 217, 0.6);
 }
 
+.DateRangePicker_picker {
+  z-index: 9999 !important;
+  top: 100px !important;
+  left: -40px !important;
+}
 
 /* Sidebar */

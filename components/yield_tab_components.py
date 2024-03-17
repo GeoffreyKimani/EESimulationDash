@@ -38,9 +38,9 @@ map_container = html.Div(
 # CSS for the sidebar header when the sidebar is expanded
 SIDEBAR_HEADER_EXPANDED_STYLE = {
     "textAlign": "center",
-    "color": "white",
+    "color": "#052C65",
     "padding": "1rem 1rem",
-    "backgroundColor": "#6DCFF2",
+    "backgroundColor": "#CFE2FF",
     "height": "3%",
 }
 
@@ -51,7 +51,7 @@ SIDEBAR_HEADER_COLLAPSED_STYLE = {
     "backgroundColor": "#6DCFF2",
     "width": "40px",
     "height": "100vh",  # Full height of the viewport
-    "position": "fixed",
+    "position": "relative",
     "top": 0,
     "left": 0,
     "writingMode": "vertical-lr",
@@ -63,19 +63,18 @@ SIDEBAR_HEADER_COLLAPSED_STYLE = {
 
 # CSS for the entire sidebar when collapsed
 SIDEBAR_COLLAPSED_STYLE = {
-    "width": "40px",  # Set the width of the collapsed sidebar
-    "maxWidth": "40px",  # Max width same as the width to prevent expansion
-    "minWidth": "40px",  # Min width same as the width to prevent contraction
-    "height": "100vh",  # Full height of the viewport
-    "position": "fixed",  # Fixed position to stay in place on scroll
-    "top": "60px",  # Distance from the top, adjust to be below the navbar
-    "left": 0,  # Align to the left of the viewport
-    "backgroundColor": "#6DCFF2",  # Background color, adjust to your preference
-    "zIndex": "1000",  # Ensure it's above other content but below modals/popups
-    "overflowX": "hidden",  # Hide horizontal overflow
-    "overflowY": "hidden",  # Hide vertical overflow
-    "transition": "all 0.5s ease",  # Transition for the collapsing action
-    "border": "none",  # No border for the collapsed sidebar
+    "width": "40px",
+    "maxWidth": "40px",
+    "minWidth": "40px",
+    # "height": "100%",  # Adjust this value to account for your navbar height
+    "position": "relative",  # Use 'fixed' to position the sidebar relative to the viewport
+    "top": "0",  # Set this value to the height of your navbar
+    "left": 0,
+    "backgroundColor": "#6DCFF2",
+    "zIndex": "1",
+    "overflowX": "hidden",
+    "overflowY": "hidden",
+    "transition": "all 0.5s",
 }
 
 # CSS for the expanded sidebar
@@ -371,7 +370,7 @@ table_and_link_container = html.Div(
 #     },  # Center the container
 # )
 
-accordion = html.Div(
+yield_tab_accordion = html.Div(
     dbc.Accordion(
         [
             dbc.AccordionItem(
@@ -410,7 +409,7 @@ layout_container = html.Div(
     children=[
         sidebar,  # assuming sidebar has a fixed width or a flex-basis set
         html.Div(
-            accordion,
+            yield_tab_accordion,
             style={
                 "flexGrow": 1,
                 "flexShrink": 1,
