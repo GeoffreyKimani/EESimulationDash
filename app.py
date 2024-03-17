@@ -408,7 +408,7 @@ def create_sidebar_controls():
                         style={"width": "100%"},
                     ),
                 ],
-                style={"margin-bottom": "20px"},
+                style={"margin-bottom": "10px", "padding-left": "20px"},
             ),
             # Container for the cloud-mask-checkbox
             html.Div(
@@ -484,28 +484,39 @@ def create_sidebar_controls():
                         placeholder="Enter year",
                         min=date(2000, 1, 1).year,
                         max=date.today().year,
-                        style={"width": "100%", "marginBottom": "20px"},
+                        style={
+                            "width": "100%",
+                            "text-align": "center",
+                        },
                     ),
                 ],
-                style={"margin-bottom": "5px"},
+                style={"margin-bottom": "10px", "padding-left": "20px"},
             ),
             # Container for the buttons aligned with other components
-            html.Button(
-                "View Indices",
-                id="toggle-indices-btn",
-                n_clicks=0,
-                className="btn btn-outline-primary btn-lg",
-                style={"width": "100%", "marginBottom": "10px"},
-            ),
-            html.Button(
-                "Submit",
-                id="submit-val",
-                n_clicks=0,
-                className="btn btn-outline-success btn-lg",
-                style={
-                    "width": "100%",
-                    "marginTop": "10px",
-                },  # Added marginTop for spacing
+            html.Div(
+                [
+                    html.Button(
+                        "View Indices",
+                        id="toggle-indices-btn",
+                        n_clicks=0,
+                        className="btn btn-outline-primary btn-lg",
+                        style={
+                            "width": "100%",
+                            "marginBottom": "10px",
+                        },
+                    ),
+                    html.Button(
+                        "Submit",
+                        id="submit-val",
+                        n_clicks=0,
+                        className="btn btn-outline-success btn-lg",
+                        style={
+                            "width": "100%",
+                            "marginTop": "10px",
+                        },  # Added marginTop for spacing
+                    ),
+                ],
+                style={"margin-bottom": "10px", "padding-left": "20px"},
             ),
         ],
         style={
@@ -568,18 +579,18 @@ def tab_2_content():
                                 html.Iframe(
                                     id="map-iframe",
                                     width="100%",
-                                    height="500px",  # Adjust height as needed
+                                    height="400px",  # Adjust height as needed
                                     style={
                                         "border": "2px solid lightgrey",
                                         "border-radius": "8px",
                                         "zIndex": 0,
-                                        "height": "700px",
+                                        "height": "680px",
                                     },
                                 ),
                             ],
                             style={
                                 "width": "100%",
-                                "height": "480px",
+                                "height": "400px",
                                 "position": "relative",
                                 "flex": "1",
                             },
