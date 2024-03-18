@@ -115,6 +115,7 @@ app.layout = html.Div(
         ),  # Stores the selected features for processing
         dcc.Store(id="modeling-df-store"),  # Stores the data after preprocessing
         dcc.Store(id="test-data-store"),  # Stores the data for model evaluation
+        dcc.Store(id="selected-crop"), # Stores the selected crop from the first tab
     ],
     style={"textAlign": "center" },
 )
@@ -171,6 +172,7 @@ def tab_1_content():
     [
         Output("dynamic-input-container", "children"),
         Output("csv-data-table", "children"),
+        Output("selected-crop", "data"),
     ],
     [
         Input("crop-selection-dropdown", "value"),
@@ -246,7 +248,7 @@ def update_inputs_and_display_csv(crop, selected_districts, selected_years, crop
             page_size=30,  # Adjust as per your requirement
     )
 
-    return [district_dropdown, year_dropdown], data_table
+    return [district_dropdown, year_dropdown], data_table, crop_state
 
 
 @app.callback(
@@ -963,15 +965,8 @@ def tab_3_content():
         [
             html.Div(
                 [
-                    html.Label("Selected Crop", style=label_style),
-                    dcc.Dropdown(
-                        id="selected-crop-dropdown",
-                        placeholder="Select Crop",
-                        disabled=True,
-                        style=dropdown_style,
-                    ),
                     html.Button(
-                        "Load CSV", id="load-csv-button", className="button-predicted"
+                        "Preview Data", id="load-csv-button", className="button-predicted"
                     ),
                     html.Div(
                         id="csv-data-table-container",
@@ -1085,7 +1080,7 @@ def update_crop_selection(gdf_data):
         Output("features-df-store", "data"),
     ],
     [Input("load-csv-button", "n_clicks")],
-    [State("selected-crop-dropdown", "value"), State("gdf-data", "data")],
+    [State("selected-crop", "data"), State("gdf-data", "data")],
     prevent_initial_call=True,
 )
 def load_and_display_csv(n_clicks, value, gdf_data):
