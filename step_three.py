@@ -54,7 +54,7 @@ def preprocess_features(features_df_json):
     return X_preprocessed
 
 
-def scale_y(features_df_json):
+def scale_y(features_df_json, y_pred=None):
     df = pd.read_json(features_df_json, orient='split')
     target = 'yield_kg_ph'
 
@@ -63,5 +63,10 @@ def scale_y(features_df_json):
     target_scaler = StandardScaler()
     y_scaled = target_scaler.fit_transform(y).flatten()  # Use flatten to convert back to 1D array if needed
 
-    print("y scaled")
-    return y_scaled
+    if y_pred is not None:
+        y_pred_inverse = target_scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
+        print("y_pred inverse transformed")
+        return y_pred_inverse
+    else:
+        print("y scaled")
+        return y_scaled
