@@ -11,6 +11,28 @@ import dash_bootstrap_components as dbc
 from dash import Dash, dcc, html, Input, Output, callback, dash_table, State
 import geopandas as gpd
 from shapely.geometry import Polygon
+from components.yield_tab_components import (
+    layout_container,
+    table_and_link_container,
+    controls_container,
+    SIDEBAR_EXPANDED_STYLE,
+    SIDEBAR_COLLAPSED_STYLE,
+    SIDEBAR_HEADER_COLLAPSED_STYLE,
+    SIDEBAR_HEADER_EXPANDED_STYLE,
+)
+
+from components.load_extract_components import (
+    layout_container2,
+    table_and_link_container1,
+    controls_container,
+    sidebar,
+    table_container1,
+    SIDEBAR_EXPANDED_STYLE,
+    SIDEBAR_COLLAPSED_STYLE,
+    SIDEBAR_HEADER_COLLAPSED_STYLE,
+    SIDEBAR_HEADER_EXPANDED_STYLE,
+)
+
 
 # from dash.dependencies import Input, Output
 import tempfile
@@ -62,6 +84,7 @@ app.layout = html.Div(
                     className="custom-tab",
                     selected_className="custom-tab--selected",
                 ),
+               
                 dcc.Tab(
                     label="Step 2: Satellite Data Extraction",
                     value="tab-2",
@@ -94,56 +117,55 @@ app.layout = html.Div(
         dcc.Store(id="test-data-store"),  # Stores the data for model evaluation
         dcc.Store(id="selected-crop"), # Stores the selected crop from the first tab
     ],
-    style={"textAlign": "center"},
+    style={"textAlign": "center" },
 )
 
 
 # ----------------------------------------------------- #
 #                   TAB 1 CONTENT                       #
 # ----------------------------------------------------- #
+
+
+
+
 # Separate functions for each tab's content
 def tab_1_content():
     return html.Div(
+            
         [
-            html.Label("Select Crop:", style={"fontSize": 20, "marginBottom": "10px"}),
-            dcc.Dropdown(
-                id="crop-selection-dropdown",
-                options=[
-                    {"label": "Maize", "value": "maize"},
-                    {"label": "Potato", "value": "potato"},
-                ],
-                value="maize",  # Default value
-                clearable=False,
-                style={"width": "100%", "marginBottom": "20px"},
-            ),
             html.Div(
-                [
-                    dcc.Dropdown(
-                        id="district-selection-dropdown", style={"display": "none"}
-                    ),
-                    dcc.Dropdown(
-                        id="year-selection-dropdown", style={"display": "none"}
-                    ),
-                ],
-                id="dynamic-input-container",
-            ),  # Container for dynamic objects
-            html.Div(id="csv-data-table"),  # Container for displaying CSV data
-            html.Button("Show Districts", id="btn-show-districts", n_clicks=0),
-            html.Button("Show Plots", id="btn-show-plots", n_clicks=0),
-            html.Button("Create Plots Box", id="btn-plots-box", n_clicks=0),
-            html.Div(id="districts-map-container"),  # To display the district map
-            html.Div(id="plots-map-container"),  # To display the plots map
-            html.Div(id="plots-map-box"),  # To display the plots map
+        [
+            dcc.Store(id="aggregated-data-store1"),
+            layout_container2,
+            # table_and_button_container,
         ],
         style={
-            "width": "50%",
-            "margin": "0 auto",
+            "position": "relative",
+            "height": "100%",
             "border": "2px solid #ddd",
             "borderRadius": "15px",
             "padding": "20px",
             "boxShadow": "2px 2px 10px #aaa",
         },
-    )
+    ),
+        
+             # Container for displaying CSV data
+        #     html.Button("Show Districts", id="btn-show-districts", n_clicks=0),
+        #     html.Button("Show Plots", id="btn-show-plots", n_clicks=0),
+        #     html.Button("Create Plots Box", id="btn-plots-box", n_clicks=0),
+        #     html.Div(id="districts-map-container"),  # To display the district map
+            # html.Div(id="plots-map-container"),  # To display the plots map
+        #     html.Div(id="plots-map-box"),  # To display the plots map
+        # ],
+        # style={
+        #     "width": "50%",
+        #     "margin": "0 auto",
+        #     "border": "2px solid #ddd",
+        #     "borderRadius": "15px",
+        #     "padding": "20px",
+        #     "boxShadow": "2px 2px 10px #aaa",
+        # },
+        ])
 
 
 @callback(
@@ -208,22 +230,22 @@ def update_inputs_and_display_csv(crop, selected_districts, selected_years, crop
     data_table = dash_table.DataTable(
         data=df_filtered.to_dict("records"),
         columns=[{"name": i, "id": i} for i in df_filtered.columns],
-        style_table={"overflowX": "auto"},
-        style_cell={  # General style for each cell
-            "minWidth": "150px",
-            "width": "150px",
-            "maxWidth": "150px",
-            "overflow": "hidden",
-            "textOverflow": "ellipsis",
-            "textAlign": "center",
-        },
-        style_header={  # Style for header cells
-            "backgroundColor": "white",
-            "fontWeight": "bold",
-            "textAlign": "center",
-        },
-        style_data={"textAlign": "center"},  # Style for data cells
-        page_size=10,  # Adjust as per your requirement
+        style_table={"overflowX": "auto", "width":"100%"},
+            style_cell={  # General style for each cell
+                "minWidth": "80px",
+                "width": "80px",
+                "maxWidth": "80px",
+                "overflow": "hidden",
+                "textOverflow": "ellipsis",
+                "textAlign": "center",
+            },
+            style_header={  # Style for header cells
+                "backgroundColor": "white",
+                "fontWeight": "bold",
+                "textAlign": "center",
+            },
+            style_data={"textAlign": "center"},  # Style for data cells
+            page_size=30,  # Adjust as per your requirement
     )
 
     return [district_dropdown, year_dropdown], data_table, crop_state
@@ -261,42 +283,73 @@ def filter_data_and_store(crop, selected_districts, selected_years):
     return df_filtered.to_json(date_format="iso", orient="split")
 
 
-@app.callback(
-    Output("districts-map-container", "children"),
-    Input("btn-show-districts", "n_clicks"),
-    State("stored-data", "data"),
-)
-def show_districts(n_clicks, stored_data):
-    if n_clicks > 0:
-        df = pd.read_json(stored_data, orient="split")
-        selected_districts = df["district"].dropna().unique().tolist()
-        print(selected_districts)
-        # Load your district geometries GeoDataFrame
-        gdf = gpd.read_file(district_shape_file)
-        fig = plot_districts_with_plotly(gdf, selected_districts)
+# @app.callback(
+#     Output("districts-map-container", "children"),
+#     Input("btn-show-districts", "n_clicks"),
+#     State("stored-data", "data"),
+# )
+# def show_districts(n_clicks, stored_data):
+#     if n_clicks > 0:
+#         df = pd.read_json(stored_data, orient="split")
+#         selected_districts = df["district"].dropna().unique().tolist()
+#         print(selected_districts)
+#         # Load your district geometries GeoDataFrame
+#         gdf = gpd.read_file(district_shape_file)
+#         fig = plot_districts_with_plotly(gdf, selected_districts)
 
-        return dcc.Graph(figure=fig)
-    return html.Div()
+#         return dcc.Graph(figure=fig)
+#     return html.Div()
 
 
-@app.callback(
-    Output("plots-map-container", "children"),
-    [Input("btn-show-plots", "n_clicks")],
-    [State("stored-data", "data")],
-)
-def show_plots(n_clicks, stored_data):
-    if n_clicks > 0:
-        df = pd.read_json(stored_data, orient="split")
+# @app.callback(
+#     Output("plots-map-container", "children"),
+#     [Input("stored-data", "data")],
+# )
+# def show_plots(data):
+#     if data is not None:
+#         df = pd.read_json(data, orient="split")
 
-        # Generate the base64-encoded image
-        encoded_image = plot_plots_in_data(df)
+#         # Generate the base64-encoded image
+#         encoded_image = plot_plots_in_data(df)
 
-        # Use the `html.Img` component to display the image directly from the base64 string
-        return html.Img(src=f"data:image/png;base64,{encoded_image}")
+#         # Use the `html.Img` component to display the image directly from the base64 string
+#         return html.Img(src=f"data:image/png;base64,{encoded_image}")
 
     # If no image is to be displayed, return an empty `div`
     return html.Div()
+@app.callback(
+    Output("districts-map-container", "children"),
+    [Input("stored-data", "data")],  # Triggered when stored-data updates
+)
+def show_districts_on_data_load(stored_data):
+    if stored_data:
+        df = pd.read_json(stored_data, orient="split")
+        selected_districts = df["district"].dropna().unique().tolist()
+        # Load your district geometries GeoDataFrame
+        gdf = gpd.read_file(district_shape_file)
+        fig = plot_districts_with_plotly(gdf, selected_districts)
+        return dcc.Graph(figure=fig)
+    return html.Div()  # Return empty if no data
 
+@app.callback(
+    Output("plots-map-container", "children"),
+    [Input("stored-data", "data")],  # Triggered when stored-data updates
+)
+def show_plots_on_data_load(stored_data):
+    if stored_data:
+        df = pd.read_json(stored_data, orient="split")
+        encoded_image = plot_plots_in_data(df)
+        image_style = {
+            'max-width': '100%',
+            'max-height': '100%',
+            'width': '100%',
+            'height': '100%'  # Maintain aspect ratio
+        }
+        return html.Img(
+            src=f"data:image/png;base64,{encoded_image}",
+            style=image_style
+        )
+    return html.Div()  # Return empty if no data
 
 @app.callback(
     Output("gdf-data", "data"),
@@ -1389,18 +1442,10 @@ def toggle_collapse(n, is_open):
 #                   YIELD GAP TAB                       #
 # ----------------------------------------------------- #
 
-from components.yield_tab_components import (
-    layout_container,
-    table_and_link_container,
-    SIDEBAR_EXPANDED_STYLE,
-    SIDEBAR_COLLAPSED_STYLE,
-    SIDEBAR_HEADER_COLLAPSED_STYLE,
-    SIDEBAR_HEADER_EXPANDED_STYLE,
-)
 
 
 def tab_yield_content():
-    # Return the layout that includes the map iframe
+    # Return the layout that includes the map iframe and table
     return html.Div(
         [
             dcc.Store(id="aggregated-data-store"),
@@ -1449,21 +1494,6 @@ def toggle_sidebar(n_clicks, sidebar_style):
         )
 
 
-# @app.callback(
-#     Output('sidebar', 'style'),
-#     Output('map-container', 'style'),
-#     Input('toggle-sidebar-button', 'n_clicks'),
-#     State('sidebar', 'style'),
-# )
-# def toggle_sidebar(n_clicks, sidebar_style):
-#     if n_clicks % 2 == 1:  # If sidebar is to be collapsed
-#         return SIDEBAR_COLLAPSED_STYLE, MAP_CONTAINER_STYLE
-#     else
-#         : # If sidebar is to be expanded
-#         return SIDEBAR_EXPANDED_STYLE, MAP_CONTAINER_STYLE
-
-
-# Callback to toggle the visibility of the table and link container
 @app.callback(
     Output("table-and-link-container", "style"),
     [Input("toggle-table-button", "n_clicks")],
@@ -1491,72 +1521,6 @@ def adjust_map_width(n_clicks):
         return {"flexGrow": 1, "transition": "flex-grow 0.5s ease"}
 
 
-# @app.callback(
-#     [Output("table-container", "style"),
-#      Output("toggle-table-button", "children")],
-#     [Input("toggle-table-button", "n_clicks")],
-#     [State("table-container", "style")],
-# )
-# def toggle_table(n_clicks, table_style):
-#     if n_clicks % 2 == 0:
-#         # Table is visible, shrink to a small strip
-#         table_style["height"] = "5%"
-#         table_style["minHeight"] = "20px"  # Ensure it does not disappear completely
-#         button_children = [html.I(className="fas fa-arrow-up")]  # Change icon to arrow-up
-#     else:
-#         # Table is shrunk, expand it
-#         table_style["height"] = "100%"
-#         button_children = [html.I(className="fas fa-arrow-down")] # Change icon to arrow-down
-#     return table_style, button_children
-
-# @app.callback(
-#         Output('yield-iframe', 'srcDoc'),
-#         [
-#             Input('crop-checklist', 'value'),
-#             State('aggregated-data-table', 'data'),
-#         ]
-# )
-# def update_base_map(crop, aggregated_data):
-#     baseMap = create_rwanda_map()
-
-#     # Save the map to a temporary HTML file
-#     with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as tmp:
-#         baseMap.save(tmp.name)
-#         tmp.close()
-#         # Read the content of this temporary file into a string
-#         with open(tmp.name, 'r') as f:
-#             html_string = f.read()
-
-#     # Delete the temporary file now that we've read it into a string
-#     os.unlink(tmp.name)
-
-#     # Color the map
-#     print("DF in map?")
-#     print(aggregated_data)
-#     color_map(aggregated_data)
-
-#     return html_string
-
-# @app.callback(
-#     Output('aggregated-data-table', 'data'),
-#     Output('aggregated-data-table', 'columns'),
-#     [   Input('crop-checklist', 'value'),
-#         Input('year-dropdown', 'value'),
-#         Input('season-checklist', 'value'),
-#         Input('variable-dropdown', 'value'),
-#         Input('map-indicators-radioitems', 'value')]
-# )
-# def update_table(crop, years_filter, season_filter, aggregation_type, map_idx):
-#     # Call your aggregate_data function
-#     df_aggregated = aggregate_data(crop, years_filter, season_filter, aggregation_type, map_idx)
-
-#     # Convert the DataFrame into a format suitable for the DataTable
-#     data = df_aggregated.to_dict('records')
-#     columns = [{'name': i, 'id': i} for i in df_aggregated.columns]
-
-#     return data, columns
-
-
 @app.callback(
     Output("aggregated-data-store", "data"),
     [
@@ -1574,28 +1538,7 @@ def store_aggregated_data(crop, years_filter, season_filter, aggregation_type, m
     return df_aggregated.to_json(date_format="split", orient="split")
 
 
-# @app.callback(
-#     Output('yield-iframe', 'srcDoc'),
-#     [Input('aggregated-data-store', 'data')]
-# )
-# def update_base_map(aggregated_data_json):
-#     if aggregated_data_json:
-#         # Deserialize the JSON string to DataFrame
-#         df_aggregated = pd.read_json(aggregated_data_json, orient='split')
 
-#         # Create the base map with coloring based on the aggregated data
-#         baseMap = create_rwanda_map()
-#         map_ = color_map(df_aggregated) # coloring logic using df_aggregated
-
-#         # Save the map to a temporary HTML file and read the content
-#         with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as tmp:
-#             baseMap.save(tmp.name)
-#             tmp.close()
-#             with open(tmp.name, 'r') as f:
-#                 html_string = f.read()
-#         os.unlink(tmp.name)
-#         return html_string
-#     return "Please select filters to display the map."
 
 
 @app.callback(
@@ -1635,6 +1578,11 @@ def update_table(aggregated_data_json):
         return data, columns
     return [], []
 
+# ----------------------------------------------#
+#           TEMP TAB CONTENT                    #
+#-----------------------------------------------#
+
+# Return the layout that includes the map iframe
 
 # ----------------------------------------------------- #
 #                   TABS JOINER                        #
@@ -1647,6 +1595,7 @@ def render_content(tab):
         return tab_2_content()
     elif tab == "tab-3":
         return tab_3_content()
+   
     elif tab == "tab-yield-gap":
         return tab_yield_content()
 
