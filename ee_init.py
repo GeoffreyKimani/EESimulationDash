@@ -2,7 +2,7 @@ import ee
 
 def initialize_ee():
     try:
-        ee.Initialize()
+        ee.Initialize(project='ee-waoformation')
         print("Earth Engine initialized successfully.")
     except ee.EEException:
         print("Failed to initialize Earth Engine.")
