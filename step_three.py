@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from constants import DATA_DIR
+from constants import DATA_DIR, CROP_DATA_DIR
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
@@ -13,10 +13,10 @@ from sklearn.pipeline import Pipeline
 def load_features_for_crop(crop):
     df = None
     if crop == 'maize':
-        maize_file = os.path.join(DATA_DIR, 'maize_df_features.csv')
+        maize_file = os.path.join(CROP_DATA_DIR, 'RwandaMaizeFeatures.csv')
         df = pd.read_csv(maize_file)
     else:
-        potato_file = os.path.join(DATA_DIR, 'potato_df_features.csv')
+        potato_file = os.path.join(CROP_DATA_DIR, 'RwandaPotatoFeatures.csv')
         df = pd.read_csv(potato_file)
     return df
 
