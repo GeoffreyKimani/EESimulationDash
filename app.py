@@ -247,6 +247,7 @@ def update_inputs_and_display_csv(crop, selected_districts, selected_years, crop
             style_data={"textAlign": "center"},  # Style for data cells
             page_size=30,  # Adjust as per your requirement
     )
+    
 
     return [district_dropdown, year_dropdown], data_table, crop_state
 
@@ -1047,35 +1048,6 @@ def tab_3_content():
 
 @app.callback(
     [
-        Output("selected-crop-dropdown", "options"),
-        Output("selected-crop-dropdown", "value"),
-    ],
-    [Input("gdf-data", "data")],
-)
-def update_crop_selection(gdf_data):
-    if gdf_data:
-        # Load GeoJSON data
-        features = json.loads(gdf_data)["features"]
-
-        # Extract properties to a list of dictionaries
-        properties_list = [feature["properties"] for feature in features]
-
-        # Convert properties to DataFrame
-        properties_df = pd.DataFrame(properties_list)
-
-        # Now, you can proceed as before
-        crops = properties_df["crop"].unique().tolist()
-        crop_value = crops[0] if crops else None
-        options = [{"label": crop, "value": crop} for crop in crops]
-
-        return options, crop_value
-
-    # Return empty options and None value if there's no data
-    return [], None
-
-
-@app.callback(
-    [
         Output("csv-data-table-container", "children"),
         Output("features-df-store", "data"),
     ],
@@ -1086,6 +1058,13 @@ def update_crop_selection(gdf_data):
 def load_and_display_csv(n_clicks, value, gdf_data):
     if n_clicks:
         df = load_features_for_crop(value)
+        print(df.columns)
+
+        # Remove the unnecessary features
+        necessary_features = ['district', 'pesticide', 'year', 'season', 'plot_hectares',\
+                'pest_disease'] + [col for col in df.columns if col.endswith('VI')] + ['yield_kg_ph']
+        df = df[necessary_features] # keep yield_kg_ph in this or it will cause downstream error in scale_y
+        df_display = df[necessary_features[:-2]] # Remove the yield column for display
 
         if gdf_data:
             # Parse the GeoJSON to extract districts
@@ -1110,8 +1089,8 @@ def load_and_display_csv(n_clicks, value, gdf_data):
 
         # Display the filtered DataFrame in a DataTable
         data_table = dash_table.DataTable(
-            df.to_dict("records"),
-            [{"name": i, "id": i} for i in df.columns],
+            df_display.to_dict("records"),
+            [{"name": i, "id": i} for i in df_display.columns],
             style_table={"overflowX": "auto"},
             style_cell={  # General style for each cell
                 "minWidth": "150px",
@@ -1142,13 +1121,10 @@ def update_features_dropdown(filtered_df_json):
         df = pd.read_json(filtered_df_json, orient="split")
 
         # Remove 'yield_kg_ph' from the list of columns
-        if "yield_kg_ph" and "yield_kg_pa" in df.columns:
-            df = df.drop(columns=["yield_kg_ph", "yield_kg_pa"])
-
-        # Remove the unnecessary features
-        necessary_features = ['district', 'pesticide', 'year', 'season', 'plot_hectares',\
-                'pest_disease', 'NDVI', 'EVI', 'SAVI', 'GNDVI']
-        df = df[necessary_features]
+        del_columns = ["yield_kg_ph", "yield_kg_pa"]
+        for col in del_columns:
+            if col in df.columns:
+                df = df.drop(columns=[col])
 
         # Ensure you're working with strings; apply .str.strip() to remove any leading/trailing whitespace
         # Then check for non-empty strings across all columns
