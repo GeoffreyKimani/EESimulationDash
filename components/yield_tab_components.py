@@ -360,15 +360,15 @@ table_and_link_container = html.Div(
 
 
 # Container that includes both the toggle button and the table and link container
-# table_and_button_container = html.Div(
-#     [toggle_table_button, table_and_link_container],
-#     style={
-#         "position": "relative",
-#         "width": "80%",
-#         "margin": "auto",
-#         "height":"100px",
-#     },  # Center the container
-# )
+table_and_button_container = html.Div(
+    [toggle_table_button, table_and_link_container],
+    style={
+        "position": "relative",
+        "width": "80%",
+        "margin": "auto",
+        "height":"100px",
+    },  # Center the container
+)
 
 yield_tab_accordion = html.Div(
     dbc.Accordion(
