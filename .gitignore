@@ -58,3 +58,4 @@ venv/
 
 # Ignore pkl file
 *.pkl
+data/*.pkl
