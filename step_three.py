@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from constants import DATA_DIR
+from constants import DATA_DIR, CROP_DATA_DIR
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
@@ -13,10 +13,10 @@ from sklearn.pipeline import Pipeline
 def load_features_for_crop(crop):
     df = None
     if crop == 'maize':
-        maize_file = os.path.join(DATA_DIR, 'maize_df_features.csv')
+        maize_file = os.path.join(CROP_DATA_DIR, 'RwandaMaizeFeatures.csv')
         df = pd.read_csv(maize_file)
     else:
-        potato_file = os.path.join(DATA_DIR, 'potato_df_features.csv')
+        potato_file = os.path.join(CROP_DATA_DIR, 'RwandaPotatoFeatures.csv')
         df = pd.read_csv(potato_file)
     return df
 
@@ -54,7 +54,7 @@ def preprocess_features(features_df_json):
     return X_preprocessed
 
 
-def scale_y(features_df_json):
+def scale_y(features_df_json, y_pred=None):
     df = pd.read_json(features_df_json, orient='split')
     target = 'yield_kg_ph'
 
@@ -63,5 +63,10 @@ def scale_y(features_df_json):
     target_scaler = StandardScaler()
     y_scaled = target_scaler.fit_transform(y).flatten()  # Use flatten to convert back to 1D array if needed
 
-    print("y scaled")
-    return y_scaled
+    if y_pred is not None:
+        y_pred_inverse = target_scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
+        print("y_pred inverse transformed")
+        return y_pred_inverse
+    else:
+        print("y scaled")
+        return y_scaled

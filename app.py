@@ -945,6 +945,10 @@ def tab_3_content():
                         id="preprocess-button",
                         className="button-predicted",
                     ),
+                    html.Div(
+                        "",
+                        id="preprocess-info"
+                    )
                 ],
                 style=box_style,
             ),  # Container for the second data table
@@ -1169,9 +1173,9 @@ def display_filtered_features_table(filtered_df_json):
 
 
 @app.callback(
-    Output(
-        "modeling-df-store", "data"
-    ),  # Assuming you have dcc.Store to hold preprocessed data
+    [Output("modeling-df-store", "data"),  
+     Output("preprocess-info", "children")], # Assuming you have dcc.Store to hold preprocessed data
+
     [Input("preprocess-button", "n_clicks")],
     [
         State("preprocessing-df-store", "data"),
@@ -1192,8 +1196,8 @@ def preprocess_data(n_clicks, features_df_json, all_features_df):
         )
 
         print("Saving preprocessed data to store")
-        return preprocessed_data_json
-    return None
+        return preprocessed_data_json, "Data preprocessed and ready for modeling."
+    return None, None
 
 
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
@@ -1222,6 +1226,11 @@ def fit_model(n_clicks, selected_model, preprocessed_data_json):
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42
         )
+
+        # remove nan values in y 
+        mask = ~np.isnan(y_train)
+        X_train = X_train[mask]
+        y_train = y_train[mask]
 
         # Select the model based on dropdown selection
         if selected_model == "LR":
@@ -1288,9 +1297,10 @@ def store_test_data(n_clicks, selected_model, preprocessed_data_json):
     [
         State("test-data-store", "data"),
         State("model-selection-dropdown", "value"),
+        State("features-df-store", "data"),
     ],  # Assuming test data is stored here
 )
-def predict_and_evaluate(n_clicks, test_data_json, selected_model):
+def predict_and_evaluate(n_clicks, test_data_json, selected_model, all_features_df):
     if n_clicks:
         print("Evaluating")
         # Deserialize test data
@@ -1299,6 +1309,7 @@ def predict_and_evaluate(n_clicks, test_data_json, selected_model):
         y_test = np.array(test_data["y_test"])
 
         print("X, y test data found")
+
         # Load the model
         model_filename = f"model_{selected_model}.pkl"
         model_path = os.path.join(DATA_DIR, model_filename)
@@ -1310,17 +1321,50 @@ def predict_and_evaluate(n_clicks, test_data_json, selected_model):
 
         # Perform predictions
         y_pred = model.predict(X_test)
-
         print("predictions made")
+
+        # Convert y_pred to its default values
+        y_pred_inv = scale_y(all_features_df, y_pred = y_pred)
+        print("Actual y_pred", y_pred_inv)
+        y_test_inv = scale_y(all_features_df, y_test)
+        print(y_test_inv)
+
         # Calculate metrics
-        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+        rmse = np.sqrt(mean_squared_error(y_test_inv, y_pred_inv))
+        rmse_norm = rmse / (np.max(y_test_inv) - np.min(y_test_inv))
+        percent_error = 100*(1 - rmse_norm)
+        std_dev = np.std(y_pred_inv)
+        mean = np.mean(y_pred_inv)
+        
+        metrics_acc = f"Model Accuracy: {round(percent_error)}%" 
+        metrics_others = f"Root Mean Squared Error: {round(rmse,2)}kg/ph\nStandard Deviation: {round(std_dev,2)}kg/ph \nMean Crop Yield: {round(mean,2)}kg/ph"
 
-        std_dev = np.std(y_test)
-        mean = np.mean(y_test)
+        metrics = html.Div(
+            [
+                html.Div(metrics_acc),
+                dbc.Button(
+                    "See Other Metrics",
+                    id="collapse-button",
+                    className="button-predicted",
+                    n_clicks=0,
+                ),
+                dbc.Collapse(
+                    dbc.Card(dbc.CardBody(metrics_others)),
+                    id="collapse", 
+                    is_open=False,
+                ),
+            ]
+        )
 
-        metrics_message = f"Root Mean Squared Error: {rmse} \nStandard deviation: {std_dev} \nMean: {mean}"
+        metrics_message = html.Div(metrics, style={
+            "position": "relative",
+            "height": "100%",
+            "border": "2px solid #ddd",
+            "borderRadius": "15px",
+            "padding": "20px",
+            "boxShadow": "2px 2px 10px #aaa",
+        })
         print(metrics_message)
-
         return metrics_message
     return html.Div(
         "No predictions made yet.",
@@ -1333,6 +1377,17 @@ def predict_and_evaluate(n_clicks, test_data_json, selected_model):
             "boxShadow": "2px 2px 10px #aaa",
         },
     )
+
+
+@app.callback(
+    Output("collapse", "is_open"),
+    [Input("collapse-button", "n_clicks")],
+    [State("collapse", "is_open")],
+)
+def toggle_collapse(n, is_open):
+    if n:
+        return not is_open
+    return is_open
 
 
 # ----------------------------------------------------- #

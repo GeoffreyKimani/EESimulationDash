@@ -3,7 +3,8 @@ import os, ee
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 DATA_DIR = os.path.join(dir_path, 'data')
-# print(f"Data root: {DATA_DIR}")
+
+CROP_DATA_DIR = os.path.join(DATA_DIR, 'CropData')
 
 ASSETS_DIR = os.path.join(dir_path, "assets")
 

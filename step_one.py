@@ -8,7 +8,7 @@ import numpy as np
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from shapely.geometry import shape
-from constants import DATA_DIR, district_shape_file, ASSETS_DIR
+from constants import DATA_DIR, CROP_DATA_DIR
 from contextlib import contextmanager
 
 import plotly.express as px
@@ -21,10 +21,10 @@ matplotlib.use('Agg')
 def load_data_for_crop(crop):
     df = None
     if crop == 'maize':
-        maize_file = os.path.join(DATA_DIR, 'Rwanda_locations_maize.csv')
+        maize_file = os.path.join(CROP_DATA_DIR, 'RwandaMaizeLocations.csv')
         df = pd.read_csv(maize_file)
     else:
-        potato_file = os.path.join(DATA_DIR, 'Rwanda_locations_potato.csv')
+        potato_file = os.path.join(CROP_DATA_DIR, 'RwandaPotatoLocations.csv')
         df = pd.read_csv(potato_file)
     return df
 
