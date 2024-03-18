@@ -1092,6 +1092,11 @@ def update_features_dropdown(filtered_df_json):
         if "yield_kg_ph" and "yield_kg_pa" in df.columns:
             df = df.drop(columns=["yield_kg_ph", "yield_kg_pa"])
 
+        # Remove the unnecessary features
+        necessary_features = ['district', 'pesticide', 'year', 'season', 'plot_hectares',\
+                'pest_disease', 'NDVI', 'EVI', 'SAVI', 'GNDVI']
+        df = df[necessary_features]
+
         # Ensure you're working with strings; apply .str.strip() to remove any leading/trailing whitespace
         # Then check for non-empty strings across all columns
         # This operation is safe as it converts all types to string before stripping
