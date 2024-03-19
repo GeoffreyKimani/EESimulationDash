@@ -78,22 +78,23 @@ app.layout = html.Div(
             value="tab-1",
             children=[
                 dcc.Tab(
-                    label="Step 1: Load and Extract Fields Data",
+                    label="Satellite Data Extraction",
                     value="tab-1",
                     id="tab-1",
                     className="custom-tab",
                     selected_className="custom-tab--selected",
                 ),
-               
+
                 dcc.Tab(
-                    label="Step 2: Satellite Data Extraction",
+                    label="Data Exploration",
                     value="tab-2",
                     id="tab-2",
                     className="custom-tab",
                     selected_className="custom-tab--selected",
                 ),
+
                 dcc.Tab(
-                    label="Step 3: Prediction",
+                    label="Data Analysis",
                     value="tab-3",
                     id="tab-3",
                     className="custom-tab",
@@ -1571,9 +1572,9 @@ def update_table(aggregated_data_json):
 @callback(Output("tabs-content", "children"), Input("tabs", "value"))
 def render_content(tab):
     if tab == "tab-1":
-        return tab_1_content()
+        return tab_2_content() # for flipped pages
     elif tab == "tab-2":
-        return tab_2_content()
+        return tab_1_content()
     elif tab == "tab-3":
         return tab_3_content()
    
