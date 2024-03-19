@@ -245,7 +245,7 @@ def update_inputs_and_display_csv(crop, selected_districts, selected_years, crop
                 "textAlign": "center",
             },
             style_data={"textAlign": "center"},  # Style for data cells
-            page_size=30,  # Adjust as per your requirement
+            page_size=10,  # Adjust as per your requirement
     )
     
 
