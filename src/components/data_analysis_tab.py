@@ -2,10 +2,11 @@ import json, os
 import pandas as pd
 import dash_bootstrap_components as dbc
 from dash import dcc, html, Input, Output, callback, dash_table, State
-from ee_imageCol import *
+from src.utils.ee_imageCol import *
+
 # Functions and variables from each tab file
 from constants import DATA_DIR
-from step_three import load_features_for_crop, preprocess_features, scale_y
+from src.utils.step_three import load_features_for_crop, preprocess_features, scale_y
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 

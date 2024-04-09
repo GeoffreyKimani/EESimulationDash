@@ -3,7 +3,7 @@ import folium
 from datetime import date
 from dash import dcc, html, Input, Output, callback
 import tempfile
-from ee_imageCol import *
+from src.utils.ee_imageCol import *
 import plotly.graph_objs as go
 import dash_bootstrap_components as dbc
 from components.yield_tab_components import (
@@ -14,11 +14,12 @@ from components.load_extract_components import (
     SIDEBAR_EXPANDED_STYLE,
     SIDEBAR_HEADER_EXPANDED_STYLE,
 )
+
 # Functions and variables from each tab file
-from step_two import (
+from src.utils.step_two import (
     satellite_dict,
 )
-from step_three import load_features_for_crop, preprocess_features, scale_y
+from src.utils.step_three import load_features_for_crop, preprocess_features, scale_y
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 
@@ -335,8 +336,6 @@ def satellite_data_extraction_tab():
         dash.dependencies.State("index-checkboxes", "value"),
     ],
 )
-
-
 def update_map(
     n_clicks,
     satellite,

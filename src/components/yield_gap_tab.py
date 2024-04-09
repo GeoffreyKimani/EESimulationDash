@@ -15,11 +15,14 @@ from components.load_extract_components import (
     SIDEBAR_HEADER_COLLAPSED_STYLE,
     SIDEBAR_HEADER_EXPANDED_STYLE,
 )
+
 # from dash.dependencies import Input, Output
 import tempfile
-from ee_imageCol import *
+from src.utils.ee_imageCol import *
+
 # Functions for Yield Gap Tab
-from yield_tab import aggregate_data, color_map
+from src.utils.yield_tab import aggregate_data, color_map
+
 
 # ----------------------------------------------------- #
 #                   YIELD GAP TAB                       #

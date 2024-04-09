@@ -6,10 +6,11 @@ from shapely.geometry import Polygon
 from components.load_extract_components import (
     layout_container2,
 )
-from ee_imageCol import *
+from src.utils.ee_imageCol import *
+
 # Functions and variables from each tab file
 from constants import district_shape_file
-from step_one import (
+from src.utils.step_one import (
     load_data_for_crop,
     plot_plots_in_data,
     plot_districts_with_plotly,

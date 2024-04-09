@@ -1,4 +1,4 @@
-from ee_init import initialize_ee
+from src.utils.ee_init import initialize_ee
 
 initialize_ee()
 

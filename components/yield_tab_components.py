@@ -1,6 +1,6 @@
 # Layout imports
 from dash import dcc, html, dash_table
-from yield_tab import create_legend
+from src.utils.yield_tab import create_legend
 import dash_bootstrap_components as dbc
 
 # ----------------------------------------------------- #
@@ -366,7 +366,7 @@ table_and_button_container = html.Div(
         "position": "relative",
         "width": "80%",
         "margin": "auto",
-        "height":"100px",
+        "height": "100px",
     },  # Center the container
 )
 
