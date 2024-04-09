@@ -2,14 +2,14 @@ import os
 import tempfile
 import pandas as pd
 from dash import dcc, html, Input, Output, callback, State
-from components.yield_tab_components import (
+from src.components.yield_gap_layout import (
     layout_container,
     SIDEBAR_EXPANDED_STYLE,
     SIDEBAR_COLLAPSED_STYLE,
     SIDEBAR_HEADER_COLLAPSED_STYLE,
     SIDEBAR_HEADER_EXPANDED_STYLE,
 )
-from components.load_extract_components import (
+from src.components.load_extract_components import (
     SIDEBAR_EXPANDED_STYLE,
     SIDEBAR_COLLAPSED_STYLE,
     SIDEBAR_HEADER_COLLAPSED_STYLE,

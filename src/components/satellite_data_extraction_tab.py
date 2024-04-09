@@ -6,11 +6,11 @@ import tempfile
 from src.utils.ee_imageCol import *
 import plotly.graph_objs as go
 import dash_bootstrap_components as dbc
-from components.yield_tab_components import (
+from src.components.yield_gap_layout import (
     SIDEBAR_EXPANDED_STYLE,
     SIDEBAR_HEADER_EXPANDED_STYLE,
 )
-from components.load_extract_components import (
+from src.components.load_extract_components import (
     SIDEBAR_EXPANDED_STYLE,
     SIDEBAR_HEADER_EXPANDED_STYLE,
 )

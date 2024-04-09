@@ -3,7 +3,7 @@ import pandas as pd
 from dash import dcc, html, Input, Output, callback, dash_table, State
 import geopandas as gpd
 from shapely.geometry import Polygon
-from components.load_extract_components import (
+from src.components.load_extract_components import (
     layout_container2,
 )
 from src.utils.ee_imageCol import *
