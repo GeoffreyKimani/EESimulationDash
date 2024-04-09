@@ -13,8 +13,6 @@ import geopandas as gpd
 from shapely.geometry import Polygon
 from components.yield_tab_components import (
     layout_container,
-    table_and_link_container,
-    controls_container,
     SIDEBAR_EXPANDED_STYLE,
     SIDEBAR_COLLAPSED_STYLE,
     SIDEBAR_HEADER_COLLAPSED_STYLE,
@@ -23,10 +21,6 @@ from components.yield_tab_components import (
 
 from components.load_extract_components import (
     layout_container2,
-    table_and_link_container1,
-    controls_container,
-    sidebar,
-    table_container1,
     SIDEBAR_EXPANDED_STYLE,
     SIDEBAR_COLLAPSED_STYLE,
     SIDEBAR_HEADER_COLLAPSED_STYLE,
@@ -52,8 +46,6 @@ from step_one import (
 from step_two import (
     satellite_dict,
     add_ee_layer,
-    integrate_indices_to_dataframe,
-    calculate_satellite_dates,
 )
 from step_three import load_features_for_crop, preprocess_features, scale_y
 from sklearn.model_selection import train_test_split
@@ -61,6 +53,9 @@ from sklearn.metrics import mean_squared_error
 
 # Functions for Yield Gap Tab
 from yield_tab import create_rwanda_map, aggregate_data, color_map
+
+# import Dash app layout
+from src.components.layout import create_layout
 
 app = Dash(
     __name__,
@@ -70,56 +65,7 @@ app = Dash(
         "https://use.fontawesome.com/releases/v5.8.1/css/all.css",
     ],
 )
-
-app.layout = html.Div(
-    [
-        dcc.Tabs(
-            id="tabs",
-            value="tab-1",
-            children=[
-                dcc.Tab(
-                    label="Satellite Data Extraction",
-                    value="tab-1",
-                    id="tab-1",
-                    className="custom-tab",
-                    selected_className="custom-tab--selected",
-                ),
-
-                dcc.Tab(
-                    label="Data Exploration",
-                    value="tab-2",
-                    id="tab-2",
-                    className="custom-tab",
-                    selected_className="custom-tab--selected",
-                ),
-
-                dcc.Tab(
-                    label="Data Analysis",
-                    value="tab-3",
-                    id="tab-3",
-                    className="custom-tab",
-                    selected_className="custom-tab--selected",
-                ),
-                dcc.Tab(
-                    label="Yield Gap", value="tab-yield-gap"
-                ),  # New tab for Yield Gap
-            ],
-            className="custom-tabs",
-        ),
-        html.Div(id="tabs-content"),
-        # define the data storage globally
-        dcc.Store(id="stored-data"),  # To store the filtered DataFrame
-        dcc.Store(id="gdf-data"),  # To store the GDF DataFrame
-        dcc.Store(id="features-df-store"),  # Stores the features for modeling
-        dcc.Store(
-            id="preprocessing-df-store"
-        ),  # Stores the selected features for processing
-        dcc.Store(id="modeling-df-store"),  # Stores the data after preprocessing
-        dcc.Store(id="test-data-store"),  # Stores the data for model evaluation
-        dcc.Store(id="selected-crop"), # Stores the selected crop from the first tab
-    ],
-    style={"textAlign": "center" },
-)
+app.layout = create_layout(app)
 
 
 # ----------------------------------------------------- #
@@ -127,46 +73,43 @@ app.layout = html.Div(
 # ----------------------------------------------------- #
 
 
-
-
 # Separate functions for each tab's content
 def tab_1_content():
     return html.Div(
-            
         [
             html.Div(
-        [
-            dcc.Store(id="aggregated-data-store1"),
-            layout_container2,
-            # table_and_button_container,
-        ],
-        style={
-            "position": "relative",
-            "height": "100%",
-            "border": "2px solid #ddd",
-            "borderRadius": "15px",
-            "padding": "20px",
-            "boxShadow": "2px 2px 10px #aaa",
-        },
-    ),
-        
-             # Container for displaying CSV data
-        #     html.Button("Show Districts", id="btn-show-districts", n_clicks=0),
-        #     html.Button("Show Plots", id="btn-show-plots", n_clicks=0),
-        #     html.Button("Create Plots Box", id="btn-plots-box", n_clicks=0),
-        #     html.Div(id="districts-map-container"),  # To display the district map
+                [
+                    dcc.Store(id="aggregated-data-store1"),
+                    layout_container2,
+                    # table_and_button_container,
+                ],
+                style={
+                    "position": "relative",
+                    "height": "100%",
+                    "border": "2px solid #ddd",
+                    "borderRadius": "15px",
+                    "padding": "20px",
+                    "boxShadow": "2px 2px 10px #aaa",
+                },
+            ),
+            # Container for displaying CSV data
+            #     html.Button("Show Districts", id="btn-show-districts", n_clicks=0),
+            #     html.Button("Show Plots", id="btn-show-plots", n_clicks=0),
+            #     html.Button("Create Plots Box", id="btn-plots-box", n_clicks=0),
+            #     html.Div(id="districts-map-container"),  # To display the district map
             # html.Div(id="plots-map-container"),  # To display the plots map
-        #     html.Div(id="plots-map-box"),  # To display the plots map
-        # ],
-        # style={
-        #     "width": "50%",
-        #     "margin": "0 auto",
-        #     "border": "2px solid #ddd",
-        #     "borderRadius": "15px",
-        #     "padding": "20px",
-        #     "boxShadow": "2px 2px 10px #aaa",
-        # },
-        ])
+            #     html.Div(id="plots-map-box"),  # To display the plots map
+            # ],
+            # style={
+            #     "width": "50%",
+            #     "margin": "0 auto",
+            #     "border": "2px solid #ddd",
+            #     "borderRadius": "15px",
+            #     "padding": "20px",
+            #     "boxShadow": "2px 2px 10px #aaa",
+            # },
+        ]
+    )
 
 
 @callback(
@@ -231,24 +174,23 @@ def update_inputs_and_display_csv(crop, selected_districts, selected_years, crop
     data_table = dash_table.DataTable(
         data=df_filtered.to_dict("records"),
         columns=[{"name": i, "id": i} for i in df_filtered.columns],
-        style_table={"overflowX": "auto", "width":"100%"},
-            style_cell={  # General style for each cell
-                "minWidth": "80px",
-                "width": "80px",
-                "maxWidth": "80px",
-                "overflow": "hidden",
-                "textOverflow": "ellipsis",
-                "textAlign": "center",
-            },
-            style_header={  # Style for header cells
-                "backgroundColor": "white",
-                "fontWeight": "bold",
-                "textAlign": "center",
-            },
-            style_data={"textAlign": "center"},  # Style for data cells
-            page_size=10,  # Adjust as per your requirement
+        style_table={"overflowX": "auto", "width": "100%"},
+        style_cell={  # General style for each cell
+            "minWidth": "80px",
+            "width": "80px",
+            "maxWidth": "80px",
+            "overflow": "hidden",
+            "textOverflow": "ellipsis",
+            "textAlign": "center",
+        },
+        style_header={  # Style for header cells
+            "backgroundColor": "white",
+            "fontWeight": "bold",
+            "textAlign": "center",
+        },
+        style_data={"textAlign": "center"},  # Style for data cells
+        page_size=10,  # Adjust as per your requirement
     )
-    
 
     return [district_dropdown, year_dropdown], data_table, crop_state
 
@@ -284,41 +226,41 @@ def filter_data_and_store(crop, selected_districts, selected_years):
     # Convert the filtered DataFrame to JSON and return
     return df_filtered.to_json(date_format="iso", orient="split")
 
+    # @app.callback(
+    #     Output("districts-map-container", "children"),
+    #     Input("btn-show-districts", "n_clicks"),
+    #     State("stored-data", "data"),
+    # )
+    # def show_districts(n_clicks, stored_data):
+    #     if n_clicks > 0:
+    #         df = pd.read_json(stored_data, orient="split")
+    #         selected_districts = df["district"].dropna().unique().tolist()
+    #         print(selected_districts)
+    #         # Load your district geometries GeoDataFrame
+    #         gdf = gpd.read_file(district_shape_file)
+    #         fig = plot_districts_with_plotly(gdf, selected_districts)
 
-# @app.callback(
-#     Output("districts-map-container", "children"),
-#     Input("btn-show-districts", "n_clicks"),
-#     State("stored-data", "data"),
-# )
-# def show_districts(n_clicks, stored_data):
-#     if n_clicks > 0:
-#         df = pd.read_json(stored_data, orient="split")
-#         selected_districts = df["district"].dropna().unique().tolist()
-#         print(selected_districts)
-#         # Load your district geometries GeoDataFrame
-#         gdf = gpd.read_file(district_shape_file)
-#         fig = plot_districts_with_plotly(gdf, selected_districts)
+    #         return dcc.Graph(figure=fig)
+    #     return html.Div()
 
-#         return dcc.Graph(figure=fig)
-#     return html.Div()
+    # @app.callback(
+    #     Output("plots-map-container", "children"),
+    #     [Input("stored-data", "data")],
+    # )
+    # def show_plots(data):
+    #     if data is not None:
+    #         df = pd.read_json(data, orient="split")
 
+    #         # Generate the base64-encoded image
+    #         encoded_image = plot_plots_in_data(df)
 
-# @app.callback(
-#     Output("plots-map-container", "children"),
-#     [Input("stored-data", "data")],
-# )
-# def show_plots(data):
-#     if data is not None:
-#         df = pd.read_json(data, orient="split")
-
-#         # Generate the base64-encoded image
-#         encoded_image = plot_plots_in_data(df)
-
-#         # Use the `html.Img` component to display the image directly from the base64 string
-#         return html.Img(src=f"data:image/png;base64,{encoded_image}")
+    #         # Use the `html.Img` component to display the image directly from the base64 string
+    #         return html.Img(src=f"data:image/png;base64,{encoded_image}")
 
     # If no image is to be displayed, return an empty `div`
     return html.Div()
+
+
 @app.callback(
     Output("districts-map-container", "children"),
     [Input("stored-data", "data")],  # Triggered when stored-data updates
@@ -333,6 +275,7 @@ def show_districts_on_data_load(stored_data):
         return dcc.Graph(figure=fig)
     return html.Div()  # Return empty if no data
 
+
 @app.callback(
     Output("plots-map-container", "children"),
     [Input("stored-data", "data")],  # Triggered when stored-data updates
@@ -342,16 +285,14 @@ def show_plots_on_data_load(stored_data):
         df = pd.read_json(stored_data, orient="split")
         encoded_image = plot_plots_in_data(df)
         image_style = {
-            'max-width': '100%',
-            'max-height': '100%',
-            'width': '100%',
-            'height': '100%'  # Maintain aspect ratio
+            "max-width": "100%",
+            "max-height": "100%",
+            "width": "100%",
+            "height": "100%",  # Maintain aspect ratio
         }
-        return html.Img(
-            src=f"data:image/png;base64,{encoded_image}",
-            style=image_style
-        )
+        return html.Img(src=f"data:image/png;base64,{encoded_image}", style=image_style)
     return html.Div()  # Return empty if no data
+
 
 @app.callback(
     Output("gdf-data", "data"),
@@ -968,7 +909,9 @@ def tab_3_content():
             html.Div(
                 [
                     html.Button(
-                        "Preview Data", id="load-csv-button", className="button-predicted"
+                        "Preview Data",
+                        id="load-csv-button",
+                        className="button-predicted",
                     ),
                     html.Div(
                         id="csv-data-table-container",
@@ -995,10 +938,7 @@ def tab_3_content():
                         id="preprocess-button",
                         className="button-predicted",
                     ),
-                    html.Div(
-                        "",
-                        id="preprocess-info"
-                    )
+                    html.Div("", id="preprocess-info"),
                 ],
                 style=box_style,
             ),  # Container for the second data table
@@ -1062,10 +1002,15 @@ def load_and_display_csv(n_clicks, value, gdf_data):
         print(df.columns)
 
         # Remove the unnecessary features
-        necessary_features = ['district', 'pesticide', 'year', 'season', 'plot_hectares',\
-                'pest_disease'] + [col for col in df.columns if col.endswith('VI')] + ['yield_kg_ph']
-        df = df[necessary_features] # keep yield_kg_ph in this or it will cause downstream error in scale_y
-        df_display = df[necessary_features[:-2]] # Remove the yield column for display
+        necessary_features = (
+            ["district", "pesticide", "year", "season", "plot_hectares", "pest_disease"]
+            + [col for col in df.columns if col.endswith("VI")]
+            + ["yield_kg_ph"]
+        )
+        df = df[
+            necessary_features
+        ]  # keep yield_kg_ph in this or it will cause downstream error in scale_y
+        df_display = df[necessary_features[:-2]]  # Remove the yield column for display
 
         if gdf_data:
             # Parse the GeoJSON to extract districts
@@ -1203,9 +1148,10 @@ def display_filtered_features_table(filtered_df_json):
 
 
 @app.callback(
-    [Output("modeling-df-store", "data"),  
-     Output("preprocess-info", "children")], # Assuming you have dcc.Store to hold preprocessed data
-
+    [
+        Output("modeling-df-store", "data"),
+        Output("preprocess-info", "children"),
+    ],  # Assuming you have dcc.Store to hold preprocessed data
     [Input("preprocess-button", "n_clicks")],
     [
         State("preprocessing-df-store", "data"),
@@ -1257,7 +1203,7 @@ def fit_model(n_clicks, selected_model, preprocessed_data_json):
             X, y, test_size=0.2, random_state=42
         )
 
-        # remove nan values in y 
+        # remove nan values in y
         mask = ~np.isnan(y_train)
         X_train = X_train[mask]
         y_train = y_train[mask]
@@ -1354,7 +1300,7 @@ def predict_and_evaluate(n_clicks, test_data_json, selected_model, all_features_
         print("predictions made")
 
         # Convert y_pred to its default values
-        y_pred_inv = scale_y(all_features_df, y_pred = y_pred)
+        y_pred_inv = scale_y(all_features_df, y_pred=y_pred)
         print("Actual y_pred", y_pred_inv)
         y_test_inv = scale_y(all_features_df, y_test)
         print(y_test_inv)
@@ -1362,11 +1308,11 @@ def predict_and_evaluate(n_clicks, test_data_json, selected_model, all_features_
         # Calculate metrics
         rmse = np.sqrt(mean_squared_error(y_test_inv, y_pred_inv))
         rmse_norm = rmse / (np.max(y_test_inv) - np.min(y_test_inv))
-        percent_error = 100*(1 - rmse_norm)
+        percent_error = 100 * (1 - rmse_norm)
         std_dev = np.std(y_pred_inv)
         mean = np.mean(y_pred_inv)
-        
-        metrics_acc = f"Model Accuracy: {round(percent_error)}%" 
+
+        metrics_acc = f"Model Accuracy: {round(percent_error)}%"
         metrics_others = f"Root Mean Squared Error: {round(rmse,2)}kg/ph\nStandard Deviation: {round(std_dev,2)}kg/ph \nMean Crop Yield: {round(mean,2)}kg/ph"
 
         metrics = html.Div(
@@ -1380,20 +1326,23 @@ def predict_and_evaluate(n_clicks, test_data_json, selected_model, all_features_
                 ),
                 dbc.Collapse(
                     dbc.Card(dbc.CardBody(metrics_others)),
-                    id="collapse", 
+                    id="collapse",
                     is_open=False,
                 ),
             ]
         )
 
-        metrics_message = html.Div(metrics, style={
-            "position": "relative",
-            "height": "100%",
-            "border": "2px solid #ddd",
-            "borderRadius": "15px",
-            "padding": "20px",
-            "boxShadow": "2px 2px 10px #aaa",
-        })
+        metrics_message = html.Div(
+            metrics,
+            style={
+                "position": "relative",
+                "height": "100%",
+                "border": "2px solid #ddd",
+                "borderRadius": "15px",
+                "padding": "20px",
+                "boxShadow": "2px 2px 10px #aaa",
+            },
+        )
         print(metrics_message)
         return metrics_message
     return html.Div(
@@ -1423,7 +1372,6 @@ def toggle_collapse(n, is_open):
 # ----------------------------------------------------- #
 #                   YIELD GAP TAB                       #
 # ----------------------------------------------------- #
-
 
 
 def tab_yield_content():
@@ -1520,9 +1468,6 @@ def store_aggregated_data(crop, years_filter, season_filter, aggregation_type, m
     return df_aggregated.to_json(date_format="split", orient="split")
 
 
-
-
-
 @app.callback(
     Output("yield-iframe", "srcDoc"), [Input("aggregated-data-store", "data")]
 )
@@ -1560,11 +1505,13 @@ def update_table(aggregated_data_json):
         return data, columns
     return [], []
 
+
 # ----------------------------------------------#
 #           TEMP TAB CONTENT                    #
-#-----------------------------------------------#
+# -----------------------------------------------#
 
 # Return the layout that includes the map iframe
+
 
 # ----------------------------------------------------- #
 #                   TABS JOINER                        #
@@ -1572,12 +1519,12 @@ def update_table(aggregated_data_json):
 @callback(Output("tabs-content", "children"), Input("tabs", "value"))
 def render_content(tab):
     if tab == "tab-1":
-        return tab_2_content() # for flipped pages
+        return tab_2_content()  # for flipped pages
     elif tab == "tab-2":
         return tab_1_content()
     elif tab == "tab-3":
         return tab_3_content()
-   
+
     elif tab == "tab-yield-gap":
         return tab_yield_content()
 
