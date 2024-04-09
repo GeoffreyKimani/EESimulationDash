@@ -13,7 +13,7 @@ from sklearn.metrics import mean_squared_error
 # ----------------------------------------------------- #
 #                   TAB 3 CONTENT                       #
 # ----------------------------------------------------- #
-def tab_3_content():
+def data_analysis_tab():
     content_style = {
         "width": "60%",
         "margin": "30px auto",

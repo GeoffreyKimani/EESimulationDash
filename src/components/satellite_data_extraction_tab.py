@@ -208,7 +208,7 @@ def create_sidebar_controls():
 
 
 # The main layout function of your app tab content
-def tab_2_content():
+def satellite_data_extraction_tab():
     sidebar_controls = create_sidebar_controls()
 
     # Now use these controls in your sidebar layout

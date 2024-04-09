@@ -1,9 +1,11 @@
 from ee_init import initialize_ee
 
 initialize_ee()
-import dash_bootstrap_components as dbc
+
 from dash import Dash
 from src.components.layout import create_layout
+import dash_bootstrap_components as dbc
+
 
 app = Dash(
     __name__,

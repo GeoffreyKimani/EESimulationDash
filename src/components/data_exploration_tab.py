@@ -22,7 +22,7 @@ from step_one import (
 
 
 # Separate functions for each tab's content
-def tab_1_content():
+def data_exploration_tab():
     return html.Div(
         [
             html.Div(
