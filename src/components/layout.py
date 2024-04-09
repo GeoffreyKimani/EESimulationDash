@@ -1,4 +1,8 @@
-from dash import Dash, html, dcc
+from dash import Dash, html, dcc, Input, Output, callback
+from src.components.data_exploration_tab import tab_1_content
+from src.components.data_analysis_tab import tab_3_content
+from src.components.satellite_data_extraction_tab import tab_2_content
+from src.components.yield_gap_tab import tab_yield_content
 
 
 def create_layout(app: Dash) -> html.Div:
@@ -51,3 +55,18 @@ def create_layout(app: Dash) -> html.Div:
         ],
         style={"textAlign": "center"},
     )
+
+
+# ----------------------------------------------------- #
+#                   TABS JOINER                        #
+# ----------------------------------------------------- #
+@callback(Output("tabs-content", "children"), Input("tabs", "value"))
+def render_content(tab):
+    if tab == "tab-1":
+        return tab_2_content()  # for flipped pages
+    elif tab == "tab-2":
+        return tab_1_content()
+    elif tab == "tab-3":
+        return tab_3_content()
+    elif tab == "tab-yield-gap":
+        return tab_yield_content()
