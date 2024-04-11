@@ -1,6 +1,6 @@
 # Layout imports
 from dash import dcc, html, dash_table
-from yield_tab import create_legend
+from src.utils.yield_tab import create_legend
 import dash_bootstrap_components as dbc
 
 
@@ -9,22 +9,18 @@ import dash_bootstrap_components as dbc
 # ----------------------------------------------------- #
 
 
-
-
 # Step 1: Create the map container
 
 district_container = html.Div(
     id="districts-map-container",
     children=[],
     style={"width": "100%", "height": "100%", "position": "relative", "flex": "1"},
-    
 )
 
 plots_container = html.Div(
     id="plots-map-container",
     children=[],
     style={"width": "100%", "height": "100%", "position": "relative", "flex": "1"},
-    
 )
 # ----------------------------------------------------- #
 #                    SIDE BAR CONTROLS                  #
@@ -99,36 +95,37 @@ controls_container = html.Div(
                 # Container for the crop selection with label
                 html.Div(
                     [
-                            html.Label("Select Crop:", style={"fontSize": 20, "marginBottom": "10px"}),
-            dcc.Dropdown(
-                id="crop-selection-dropdown",
-                options=[
-                    {"label": "Maize", "value": "maize"},
-                    {"label": "Potato", "value": "potato"},
-                ],
-                value="maize",  # Default value
-                clearable=False,
-                style={"width": "100%", "marginBottom": "20px"},
-            ),
-            html.Div(
-                [
-                    dcc.Dropdown(
-                        id="district-selection-dropdown", style={"display": "none"}
-                    ),
-                    dcc.Dropdown(
-                        id="year-selection-dropdown", style={"display": "none"}
-                    ),
-                ],
-                id="dynamic-input-container",
-            ),  # Container for dynamic objects
+                        html.Label(
+                            "Select Crop:",
+                            style={"fontSize": 20, "marginBottom": "10px"},
+                        ),
+                        dcc.Dropdown(
+                            id="crop-selection-dropdown",
+                            options=[
+                                {"label": "Maize", "value": "maize"},
+                                {"label": "Potato", "value": "potato"},
+                            ],
+                            value="maize",  # Default value
+                            clearable=False,
+                            style={"width": "100%", "marginBottom": "20px"},
+                        ),
+                        html.Div(
+                            [
+                                dcc.Dropdown(
+                                    id="district-selection-dropdown",
+                                    style={"display": "none"},
+                                ),
+                                dcc.Dropdown(
+                                    id="year-selection-dropdown",
+                                    style={"display": "none"},
+                                ),
+                            ],
+                            id="dynamic-input-container",
+                        ),  # Container for dynamic objects
                     ],
                     style={"margin-bottom": "10px", "padding-left": "20px"},
                 ),  # Adjust the padding-left as needed
                 # Container for year selection
-              
-                
-                
-                
             ],
             style={
                 "width": "100%",
@@ -184,9 +181,7 @@ toggle_table_button = html.Button("Toggle Table", id="toggle-table-button", n_cl
 
 # Container for the table and the legend
 table_container1 = html.Div(
-    [
-        html.Div(id="csv-data-table")  # This will be where the DataTable is inserted
-    ],
+    [html.Div(id="csv-data-table")],  # This will be where the DataTable is inserted
     style={
         "width": "100%",  # Adjusted to take full width
         "display": "inline-block",
@@ -236,7 +231,9 @@ load_tab_accordion = html.Div(
                         [
                             dbc.AccordionItem(
                                 title="Plots",
-                                children=[plots_container],  # Ensure map_container is properly defined elsewhere
+                                children=[
+                                    plots_container
+                                ],  # Ensure map_container is properly defined elsewhere
                                 item_id="item-1",
                             ),
                         ],
@@ -250,7 +247,9 @@ load_tab_accordion = html.Div(
                         [
                             dbc.AccordionItem(
                                 title="Districts",
-                                children=[district_container],  # This will be the same map_container or another one as per your requirement
+                                children=[
+                                    district_container
+                                ],  # This will be the same map_container or another one as per your requirement
                                 item_id="item-2",
                             ),
                         ],
@@ -267,7 +266,9 @@ load_tab_accordion = html.Div(
                     [
                         dbc.AccordionItem(
                             title="Filtered Data",
-                            children=[table_and_link_container1],  # Ensure this container is properly defined elsewhere
+                            children=[
+                                table_and_link_container1
+                            ],  # Ensure this container is properly defined elsewhere
                             item_id="item-3",
                         ),
                     ],

@@ -15,9 +15,9 @@ python -m venv venv
 . .\venv\Scripts\activate (Windows)
 ```
 
-> Install from requirements file
+> Install from requirements file in src/environment
 ```
-pip install -r requirements.txt
+pip install -r ./environment/requirements.txt
 ```
 
 (This will install necessary packages including dash)
@@ -43,7 +43,7 @@ pip install -r requirements.txt
 >> For additional guidelines, refer to `https://developers.google.com/earth-engine/guides/auth`
 
 ## Test GEE correct functionality
-> A test file `test_gee.py` has been included in the root directory, run the following command to test that the installations and initialization of GEE is correctly done. You should get a response similar to this;
+> A test file `test_gee.py` has been included in the src/utils directory, run the following command to test that the installations and initialization of GEE is correctly done. You should get a response similar to this;
 
 ```
 {'type': 'Image', 'bands': [{'id': 'elevation', 'data_type': {'type': 'PixelType', 'precision': 'int', ... }}]}
